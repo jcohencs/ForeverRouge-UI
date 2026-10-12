@@ -117,14 +117,28 @@ local warnedNoFallback = {}
 
 local function OnSpellCastSucceeded(spellID)
     for _, iconFrame in ipairs(icons) do
-        if iconFrame.kind == "cooldown" and iconFrame.secretMode and iconFrame.spellID == spellID then
-            local duration = addon.GetDB().tracker.fallbackDurations[iconFrame.spellName]
-            if duration then
-                iconFrame.fallbackStart = GetTime()
-                iconFrame.fallbackDuration = duration
-            elseif not warnedNoFallback[iconFrame.spellName] then
-                warnedNoFallback[iconFrame.spellName] = true
-                print(("ForeverRogue UI: %s's cooldown is sealed by the client and no fallback duration is set - add one under tracker.fallbackDurations in Config.lua to track it."):format(iconFrame.spellName))
+        if iconFrame.spellID == spellID then
+            if iconFrame.kind == "cooldown" and iconFrame.secretMode then
+                local duration = addon.GetDB().tracker.fallbackDurations[iconFrame.spellName]
+                if duration then
+                    iconFrame.fallbackStart = GetTime()
+                    iconFrame.fallbackDuration = duration
+                elseif not warnedNoFallback[iconFrame.spellName] then
+                    warnedNoFallback[iconFrame.spellName] = true
+                    print(("ForeverRogue UI: %s's cooldown is sealed by the client and no fallback duration is set - add one under tracker.fallbackDurations in Config.lua to track it."):format(iconFrame.spellName))
+                end
+            elseif iconFrame.kind ~= "cooldown" then
+                -- Arm a self-timed backup too, in case the live aura
+                -- read for this effect isn't available at all (e.g. this
+                -- server seems to hide enemy debuff durations from
+                -- addons, similar to how interrupt cooldowns are
+                -- sealed). Only ever used if the live read comes up
+                -- empty - see UpdateAuraIcon.
+                local duration = addon.GetDB().tracker.fallbackDurations[iconFrame.spellName]
+                if duration then
+                    iconFrame.castFallbackStart = GetTime()
+                    iconFrame.castFallbackDuration = duration
+                end
             end
         end
     end
@@ -153,50 +167,81 @@ local function FindAura(unit, name, filter)
     return nil
 end
 
+-- Checks this icon's self-timed backup (armed from OnSpellCastSucceeded
+-- when a live aura read isn't available for it at all). Returns the
+-- remaining seconds, or nil if there's no active backup timer.
+local function CheckCastFallback(iconFrame)
+    if not iconFrame.castFallbackStart then
+        return nil
+    end
+    local remaining = (iconFrame.castFallbackStart + iconFrame.castFallbackDuration) - GetTime()
+    if remaining <= 0 then
+        iconFrame.castFallbackStart = nil
+        return nil
+    end
+    return remaining
+end
+
+local function ShowFromCastFallback(iconFrame, remaining)
+    iconFrame:Show()
+    iconFrame.cooldown:SetCooldown(iconFrame.castFallbackStart, iconFrame.castFallbackDuration)
+    iconFrame.cooldown:Show()
+    iconFrame.text:SetText(FormatTime(remaining) .. "*")
+    SetGlow(iconFrame, remaining)
+end
+
 local function UpdateAuraIcon(iconFrame)
     local unit = iconFrame.kind == "playerBuff" and "player" or "target"
     local filter = iconFrame.kind == "playerBuff" and "HELPFUL" or "HARMFUL"
+    local targetGone = unit == "target" and not UnitExists("target")
 
-    if unit == "target" and not UnitExists("target") then
-        iconFrame.lastSeenTime = nil
-        HideIcon(iconFrame)
-        return
-    end
+    if not targetGone then
+        local icon, duration, expirationTime = FindAura(unit, iconFrame.spellName, filter)
+        if icon then
+            iconFrame.lastSeenTime = GetTime()
+            iconFrame:Show()
+            if iconFrame.texture:GetTexture() ~= icon then
+                iconFrame.texture:SetTexture(icon)
+            end
 
-    local icon, duration, expirationTime = FindAura(unit, iconFrame.spellName, filter)
-    if not icon then
-        -- Could be the aura genuinely gone, or this server's flaky aura
-        -- API missing a read it would've gotten right a tick later.
-        -- Don't trust a miss until the grace period's run out.
+            if duration and duration > 0 and expirationTime then
+                local remaining = expirationTime - GetTime()
+                if remaining > 0 then
+                    iconFrame.cooldown:SetCooldown(expirationTime - duration, duration)
+                    iconFrame.cooldown:Show()
+                    iconFrame.text:SetText(FormatTime(remaining))
+                    SetGlow(iconFrame, remaining)
+                    return
+                end
+            end
+
+            -- No duration info (permanent-style effect) - just show the icon.
+            iconFrame.cooldown:Hide()
+            iconFrame.glow:Hide()
+            iconFrame.text:SetText("")
+            return
+        end
+
+        -- Live read found nothing. Could be genuinely gone, or this
+        -- server's flaky aura API missing a read it'd have gotten right
+        -- a tick later - don't trust a miss until grace runs out.
         if iconFrame.lastSeenTime and (GetTime() - iconFrame.lastSeenTime) < AURA_FLAKE_GRACE then
             return -- leave the icon exactly as it was last tick
         end
-        iconFrame.lastSeenTime = nil
-        HideIcon(iconFrame)
+    end
+
+    iconFrame.lastSeenTime = nil
+
+    -- No live data available at all (this server may hide enemy debuff
+    -- durations from addons the same way it seals some cooldowns) - use
+    -- our own cast-triggered stopwatch if one's running.
+    local remaining = CheckCastFallback(iconFrame)
+    if remaining then
+        ShowFromCastFallback(iconFrame, remaining)
         return
     end
 
-    iconFrame.lastSeenTime = GetTime()
-    iconFrame:Show()
-    if iconFrame.texture:GetTexture() ~= icon then
-        iconFrame.texture:SetTexture(icon)
-    end
-
-    if duration and duration > 0 and expirationTime then
-        local remaining = expirationTime - GetTime()
-        if remaining > 0 then
-            iconFrame.cooldown:SetCooldown(expirationTime - duration, duration)
-            iconFrame.cooldown:Show()
-            iconFrame.text:SetText(FormatTime(remaining))
-            SetGlow(iconFrame, remaining)
-            return
-        end
-    end
-
-    -- No duration info (permanent-style effect) - just show the icon.
-    iconFrame.cooldown:Hide()
-    iconFrame.glow:Hide()
-    iconFrame.text:SetText("")
+    HideIcon(iconFrame)
 end
 
 -- ---------------------------------------------------------------------
@@ -281,9 +326,13 @@ local function CreateIcon(db, kind, spellName)
     end)
     iconFrame:SetScript("OnLeave", GameTooltip_Hide)
 
+    -- Resolved for every kind, not just "cooldown" - targetDebuff/
+    -- playerBuff icons need it too, to match UNIT_SPELLCAST_SUCCEEDED
+    -- and arm their own cast-triggered fallback timer.
+    local index = addon.GetSpellBookIndex(spellName)
+    iconFrame.spellID = index and addon.GetSpellIDForIndex(index)
+
     if kind == "cooldown" then
-        local index = addon.GetSpellBookIndex(spellName)
-        iconFrame.spellID = index and addon.GetSpellIDForIndex(index)
         local texture = addon.GetSpellIconTexture(spellName)
         iconFrame.texture:SetTexture(texture or "Interface\\Icons\\INV_Misc_QuestionMark")
     else

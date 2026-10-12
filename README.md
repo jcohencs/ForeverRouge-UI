@@ -67,10 +67,15 @@ tracker = {
   cooldown itself (~1.5s from using *any* ability) is filtered out so
   one ability use doesn't flash the whole row.
 - **targetDebuffs**: for stuff you apply to your current target
-  (bleeds, Kidney Shot's stun, Gouge). Reads the aura's *real*
-  remaining duration, so it's exact — shows while it's up, disappears
-  the instant it falls off or you switch target.
-- **playerBuffs**: same idea, for buffs on yourself (Blade Flurry).
+  (bleeds, Kidney Shot's stun, Gouge). Tries to read the aura's *real*
+  remaining duration first (exact, no `*`) — but this server appears to
+  hide enemy debuff durations from addons entirely for some effects
+  (Rupture/Gouge/Kidney Shot never read live here), so if that comes
+  back empty it falls back to a self-timed estimate from
+  `fallbackDurations` instead, same idea as the sealed-cooldown
+  fallback below.
+- **playerBuffs**: same idea, for buffs on yourself (Blade Flurry) —
+  these have read live fine so far.
 
 Move an ability between these three lists if it's being tracked the
 wrong way — e.g. if something is really an effect you apply rather than
@@ -85,37 +90,41 @@ in your spellbook (wrong spec, or on this server's rune-engraving
 system the rune isn't engraved yet), or the name in `Config.lua`
 doesn't exactly match the one in your spellbook/aura.
 
-This server's aura reads (`targetDebuffs`/`playerBuffs`) are also a bit
-flaky at the API level — they intermittently come back empty for a
-split second even while the real effect is still up. The addon tolerates
-up to 1 second of that (`AURA_FLAKE_GRACE` in `Tracker.lua`) before
-actually hiding an icon, so brief hiccups don't cause flicker. If an
-aura-tracked icon still never shows at all (not even flickering), run
-`/frui auras target HARMFUL` (or `player HELPFUL` for a buff) while the
-effect is active, or `/frui auralog on` to watch it live — that'll show
-whether it's being found under a different name/filter than expected.
+This server's aura reads are also a bit flaky at the API level for
+effects that *do* read live — they can intermittently come back empty
+for a split second even while the real effect is still up. The addon
+tolerates up to 1 second of that (`AURA_FLAKE_GRACE` in `Tracker.lua`)
+before actually hiding an icon, so brief hiccups don't cause flicker.
 
-### Some cooldowns are an estimate, on purpose
+### Some cooldowns/durations are an estimate, on purpose
 
 Blizzard deliberately seals the real cooldown numbers for some
 abilities from addons entirely — interrupts, and apparently several CC
-effects too on this server (an anti-sniping measure for PvP). Not even
-passing the sealed value through to another API is allowed, so there's
-no way to read the actual cooldown for those from here at all.
+effects too on this server (an anti-sniping measure for PvP). This
+server extends the same idea to some enemy debuff durations (Rupture,
+Gouge, Kidney Shot never read live here). Not even passing a sealed
+value through to another API is allowed, so there's no way to read the
+actual number for those from here at all.
 
-For any ability in `tracker.cooldowns` that turns out sealed, the addon
-instead times it itself using `tracker.fallbackDurations`: the moment
-you cast it, it starts its own stopwatch using the approximate cooldown
-you've set there and counts down normally (glow included). Its
-countdown text gets a trailing `*` as a reminder it's an estimate —
-if the real cooldown differs (talents, gear, etc.), adjust the number
-to match what you see in-game. Fallback durations are preset for every
-ability in the default `cooldowns` list, but they're only ever used if
-that ability actually turns out to be sealed — anything that reads live
-fine just ignores its fallback number and shows the exact value (no
-`*`). If you ever see the chat message "`<ability>`'s cooldown is
-sealed... no fallback duration is set", that ability is sealed and
-needs an entry added to `fallbackDurations`.
+For anything in `tracker.cooldowns`/`targetDebuffs`/`playerBuffs` that
+turns out unreadable, the addon instead times it itself using
+`tracker.fallbackDurations`: the moment you cast it, it starts its own
+stopwatch using the approximate duration you've set there and counts
+down normally (glow included). Its countdown text gets a trailing `*`
+as a reminder it's an estimate — if the real duration differs (talents,
+gear, combo points, etc.), adjust the number to match what you see
+in-game. Fallback durations are preset for every ability in the default
+lists, but they're only ever used as a backup — anything that reads
+live fine just ignores its fallback number and shows the exact value
+(no `*`). If you ever see the chat message "`<ability>`'s cooldown is
+sealed... no fallback duration is set" for a *new* ability you've added,
+give it an entry in `fallbackDurations` too.
+
+If an ability still doesn't show up at all even with a fallback
+configured, run `/frui debug <name>` to check its spellbook lookup, or
+`/frui auras target HARMFUL` (or `player HELPFUL` for a buff) / `/frui
+auralog on` to watch the live aura data and confirm it's not just named
+differently than expected.
 
 ## Layout
 
