@@ -7,7 +7,6 @@ local addon = ForeverRougeUI
 
 local ENERGY_POWER_TYPE = (Enum and Enum.PowerType and Enum.PowerType.Energy) or 3
 local COMBO_POWER_TYPE = (Enum and Enum.PowerType and Enum.PowerType.ComboPoints) or 4
-local SPELL_BOOK_TYPE = BOOKTYPE_SPELL or "spell"
 
 -- This server's core doesn't support every standard Blizzard event
 -- (e.g. LEARNED_SPELL_IN_TAB), and an unknown event throws a hard error
@@ -47,15 +46,18 @@ function addon.GetComboPoints()
 end
 
 -- ---------------------------------------------------------------------
--- Spellbook scanning. On this server, looking spells up by name via the
--- "modern" GetSpellCooldown(name)/GetSpellTexture(name) calls comes back
--- empty, so instead we walk the player's actual spellbook (the same data
--- the default Blizzard spellbook UI reads) and match by name to get a
--- slot index. That index is then the reliable way to read cooldown and
--- icon info for that ability.
+-- Spellbook scanning. This client only exposes the modern C_SpellBook /
+-- C_Spell namespaces (no legacy GetSpellTabInfo/GetSpellCooldown(name)
+-- globals at all), and C_Spell has no name->spellID lookup. So we walk
+-- the player's actual spellbook via C_SpellBook, match by name to get a
+-- slot index, read the spellID for that slot from C_SpellBook, and then
+-- use that spellID with C_Spell for cooldown/texture.
 -- ---------------------------------------------------------------------
 
+local SPELL_BOOK_BANK = (Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player) or 0
+
 local spellIndexCache = {}
+local spellIDCache = {}
 
 local function NormalizeName(name)
     return name and name:lower():gsub("^%s+", ""):gsub("%s+$", "")
@@ -64,20 +66,23 @@ end
 local function ScanSpellbookFor(targetName)
     targetName = NormalizeName(targetName)
     if not targetName then return nil end
+    if not (C_SpellBook and C_SpellBook.GetNumSpellBookSkillLines and C_SpellBook.GetSpellBookSkillLineInfo and C_SpellBook.GetSpellBookItemName) then
+        return nil
+    end
 
-    local numTabs = GetNumSpellTabs and GetNumSpellTabs() or 0
-    for tab = 1, numTabs do
-        local _, _, offset, numSpells = GetSpellTabInfo(tab)
-        offset = offset or 0
-        numSpells = numSpells or 0
-        for i = offset + 1, offset + numSpells do
-            local spellName
-            if type(GetSpellBookItemName) == "function" then
-                local ok, n = pcall(GetSpellBookItemName, i, SPELL_BOOK_TYPE)
-                if ok then spellName = n end
-            end
-            if spellName and NormalizeName(spellName) == targetName then
-                return i
+    local okLines, numLines = pcall(C_SpellBook.GetNumSpellBookSkillLines)
+    if not okLines or not numLines then return nil end
+
+    for line = 1, numLines do
+        local okInfo, lineInfo = pcall(C_SpellBook.GetSpellBookSkillLineInfo, line)
+        if okInfo and lineInfo then
+            local offset = lineInfo.itemIndexOffset or 0
+            local numItems = lineInfo.numSpellBookItems or 0
+            for i = offset + 1, offset + numItems do
+                local okName, spellName = pcall(C_SpellBook.GetSpellBookItemName, i, SPELL_BOOK_BANK)
+                if okName and spellName and NormalizeName(spellName) == targetName then
+                    return i
+                end
             end
         end
     end
@@ -98,15 +103,29 @@ function addon.GetSpellBookIndex(name, forceRescan)
     return index
 end
 
+-- Resolves (and caches) the numeric spellID behind a spellbook index.
+function addon.GetSpellIDForIndex(index)
+    if not index then return nil end
+    if spellIDCache[index] then return spellIDCache[index] end
+    if not (C_SpellBook and C_SpellBook.GetSpellBookItemInfo) then return nil end
+
+    local ok, info = pcall(C_SpellBook.GetSpellBookItemInfo, index, SPELL_BOOK_BANK)
+    if ok and info and info.spellID then
+        spellIDCache[index] = info.spellID
+        return info.spellID
+    end
+    return nil
+end
+
 function addon.InvalidateSpellBookCache()
     wipe(spellIndexCache)
+    wipe(spellIDCache)
 end
 
 -- Returns start, duration, isEnabled, texture for a spell looked up by name.
 function addon.GetSpellCooldownInfo(name)
     local start, duration, enabled, texture
 
-    -- Preferred path on this server: resolve via spellbook slot.
     local index = addon.GetSpellBookIndex(name)
     if not index then
         -- spellbook layout can shift (talents/runes) - rescan once before giving up
@@ -114,36 +133,27 @@ function addon.GetSpellCooldownInfo(name)
     end
 
     if index then
-        if type(GetSpellCooldown) == "function" then
-            local ok, s, d, e = pcall(GetSpellCooldown, index, SPELL_BOOK_TYPE)
-            if ok and s then
-                start, duration, enabled = s, d, e
-            end
-        end
-        if type(GetSpellBookItemTexture) == "function" then
-            local ok, tex = pcall(GetSpellBookItemTexture, index, SPELL_BOOK_TYPE)
+        if C_SpellBook and C_SpellBook.GetSpellBookItemTexture then
+            local ok, tex = pcall(C_SpellBook.GetSpellBookItemTexture, index, SPELL_BOOK_BANK)
             if ok then
                 texture = tex
             end
         end
-    end
 
-    -- Retail fallback: name -> spellID -> C_Spell.
-    if not start and C_Spell and C_Spell.GetSpellCooldown then
-        local spellID = C_Spell.GetSpellIdForName and C_Spell.GetSpellIdForName(name)
-        if spellID then
-            local info = C_Spell.GetSpellCooldown(spellID)
-            if info then
+        local spellID = addon.GetSpellIDForIndex(index)
+        if spellID and C_Spell and C_Spell.GetSpellCooldown then
+            local ok, info = pcall(C_Spell.GetSpellCooldown, spellID)
+            if ok and info then
                 start, duration, enabled = info.startTime, info.duration, info.isEnabled
             end
             if not texture and C_Spell.GetSpellTexture then
-                texture = C_Spell.GetSpellTexture(spellID)
+                local okTex, tex = pcall(C_Spell.GetSpellTexture, spellID)
+                if okTex then texture = tex end
             end
         end
     end
 
-    -- Last resort: the classic by-name global, in case this ability
-    -- just isn't showing up in the spellbook scan for some reason.
+    -- Legacy fallback, in case a future server patch brings these back.
     if not start and type(GetSpellCooldown) == "function" then
         local ok, s, d, e = pcall(GetSpellCooldown, name)
         if ok and s then
@@ -157,38 +167,30 @@ function addon.GetSpellCooldownInfo(name)
         end
     end
 
-    return start or 0, duration or 0, enabled ~= 0 and enabled ~= false, texture
+    return start or 0, duration or 0, enabled ~= false, texture
 end
 
 -- Resolves an icon texture by spell name across API versions.
 function addon.GetSpellIconTexture(name)
     local index = addon.GetSpellBookIndex(name)
-    if index and type(GetSpellBookItemTexture) == "function" then
-        local ok, tex = pcall(GetSpellBookItemTexture, index, SPELL_BOOK_TYPE)
+
+    if index and C_SpellBook and C_SpellBook.GetSpellBookItemTexture then
+        local ok, tex = pcall(C_SpellBook.GetSpellBookItemTexture, index, SPELL_BOOK_BANK)
         if ok and tex then
             return tex
         end
     end
 
-    if C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellIdForName then
-        local spellID = C_Spell.GetSpellIdForName(name)
-        if spellID then
-            local tex = C_Spell.GetSpellTexture(spellID)
-            if tex then
-                return tex
-            end
+    local spellID = index and addon.GetSpellIDForIndex(index)
+    if spellID and C_Spell and C_Spell.GetSpellTexture then
+        local ok, tex = pcall(C_Spell.GetSpellTexture, spellID)
+        if ok and tex then
+            return tex
         end
     end
 
     if type(GetSpellTexture) == "function" then
         local ok, tex = pcall(GetSpellTexture, name)
-        if ok and tex then
-            return tex
-        end
-    end
-
-    if type(GetSpellInfo) == "function" then
-        local ok, _, _, tex = pcall(GetSpellInfo, name)
         if ok and tex then
             return tex
         end
@@ -269,8 +271,11 @@ function addon.DebugSpell(name)
     local index = addon.GetSpellBookIndex(name, true)
     print("  spellbook index: " .. tostring(index))
     if index then
-        local n = GetSpellBookItemName and GetSpellBookItemName(index, SPELL_BOOK_TYPE)
-        print("  spellbook name at index: " .. tostring(n))
+        if C_SpellBook and C_SpellBook.GetSpellBookItemName then
+            local ok, n = pcall(C_SpellBook.GetSpellBookItemName, index, SPELL_BOOK_BANK)
+            print("  spellbook name at index: " .. tostring(ok and n))
+        end
+        print("  spellID: " .. tostring(addon.GetSpellIDForIndex(index)))
     end
     local start, duration, enabled, texture = addon.GetSpellCooldownInfo(name)
     print(("  start=%s duration=%s enabled=%s texture=%s"):format(
