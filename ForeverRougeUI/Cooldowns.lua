@@ -21,6 +21,26 @@ local function FormatTime(remaining)
     end
 end
 
+-- Blizzard deliberately "seals" the cooldown numbers for some abilities
+-- (interrupts especially, like Kick) so addons can't do math on them -
+-- an anti cooldown-sniping measure for PvP. Trying to use those values
+-- in our own arithmetic throws a hard error. When that happens we flag
+-- the icon as secretMode and hand the raw values straight through to
+-- Blizzard's own Cooldown widget instead, which is allowed to read them
+-- internally even though we can't: it draws its own swipe and its own
+-- countdown number, and tells us (via OnCooldownDone) when it's over.
+local function ArmSecureCooldown(iconFrame, start, duration)
+    iconFrame.cooldown:SetHideCountdownNumbers(false)
+    iconFrame.cooldown:SetScript("OnCooldownDone", function()
+        iconFrame.glow:Hide()
+        iconFrame:Hide()
+    end)
+    iconFrame.cooldown:SetCooldown(start, duration)
+    iconFrame.text:SetText("")
+    iconFrame.glow:Hide()
+    iconFrame:Show()
+end
+
 local function UpdateIcon(iconFrame)
     local start, duration, enabled, texture = addon.GetSpellCooldownInfo(iconFrame.spellName)
 
@@ -28,7 +48,18 @@ local function UpdateIcon(iconFrame)
         iconFrame.texture:SetTexture(texture)
     end
 
-    local remaining = (start + duration) - GetTime()
+    if iconFrame.secretMode then
+        -- Fully event-driven for this one: OnSpellCastSucceeded shows it,
+        -- the Cooldown widget's own OnCooldownDone hides it.
+        return
+    end
+
+    local ok, remaining = pcall(function() return (start + duration) - GetTime() end)
+    if not ok then
+        -- First time we've seen this: this ability's cooldown is sealed.
+        iconFrame.secretMode = true
+        return
+    end
 
     if not enabled or duration <= GCD_THRESHOLD or start == 0 or remaining <= 0 then
         -- Ready (or not usable right now) - nothing to show.
@@ -59,6 +90,16 @@ local function UpdateAll()
     end
 end
 
+local function OnSpellCastSucceeded(unit, spellID)
+    if unit ~= "player" or not spellID then return end
+    for _, iconFrame in ipairs(icons) do
+        if iconFrame.secretMode and iconFrame.spellID == spellID then
+            local start, duration = addon.GetSpellCooldownInfo(iconFrame.spellName)
+            ArmSecureCooldown(iconFrame, start, duration)
+        end
+    end
+end
+
 function addon.InitCooldowns()
     if initialized then
         UpdateAll()
@@ -78,6 +119,8 @@ function addon.InitCooldowns()
     for i, spellName in ipairs(db.abilities) do
         local iconFrame = CreateFrame("Frame", nil, row)
         iconFrame.spellName = spellName
+        local index = addon.GetSpellBookIndex(spellName)
+        iconFrame.spellID = index and addon.GetSpellIDForIndex(index)
         iconFrame:SetSize(db.iconSize, db.iconSize)
         iconFrame:SetPoint("LEFT", row, "LEFT", (i - 1) * (db.iconSize + db.spacing), 0)
         iconFrame:Hide() -- hidden by default; only shown while on cooldown
@@ -121,7 +164,12 @@ function addon.InitCooldowns()
     addon.SafeRegisterEvent(watcher, "SPELL_UPDATE_COOLDOWN")
     addon.SafeRegisterEvent(watcher, "PLAYER_ENTERING_WORLD")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_SPELLCAST_SUCCEEDED", "player")
-    watcher:SetScript("OnEvent", UpdateAll)
+    watcher:SetScript("OnEvent", function(_, event, unit, _, spellID)
+        if event == "UNIT_SPELLCAST_SUCCEEDED" then
+            OnSpellCastSucceeded(unit, spellID)
+        end
+        UpdateAll()
+    end)
 
     local ticker = CreateFrame("Frame")
     local elapsedSinceUpdate = 0
