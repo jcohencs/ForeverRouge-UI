@@ -151,13 +151,12 @@ resizing icons or the bar in `Config.lua` keeps everything aligned.
 
 ## Combo point pips
 
-Uses the real Blizzard combo point art rather than custom-drawn
-circles — specifically the `UI-RogueCP-Slash-Blue` atlas, which is
-exactly what this client's own Personal Resource Display uses
-(confirmed via `/framestack`, source:
-`Blizzard_UnitFrame/Mainline/RogueComboPoint.xml`). It's the only
-combo point style/color this client ships (no red or round variant, no
-tintable base, confirmed via `/frui atlases`), so pips show in
-Blizzard's native blue "slash" style. Each pip is transparent until
-that point is actually spent. If this client ever gets other atlas
-variants, swap `COMBO_POINT_ATLAS` in `ComboPoints.lua`.
+Plain blue boxes — a faint always-visible background per slot, filled
+solid blue once that point is spent. Both circular art (a shipped
+custom texture) and the real Blizzard combo point atlas
+(`UI-RogueCP-Slash-Blue`, confirmed via `/framestack` as exactly what
+this client's own Personal Resource Display uses) were tried first, but
+neither `:SetMask` nor `:SetAtlas` actually renders anything on this
+client — both accept the call without erroring, but nothing shows.
+Plain `:SetColorTexture()` boxes are the one approach that's reliably
+rendered correctly here, so that's what's used.

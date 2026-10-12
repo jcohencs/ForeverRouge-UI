@@ -4,14 +4,6 @@ local addon = ForeverRougeUI
 local pips = {}
 local row, initialized
 
--- Real Blizzard art, discovered via /framestack on this client's own
--- Personal Resource Display (source:
--- Interface/AddOns/Blizzard_UnitFrame/Mainline/RogueComboPoint.xml) -
--- the "Slash" combo point mark, in the only color this server's client
--- ships (confirmed via /frui atlases: no red or round variant exists
--- here, and the art itself isn't a tintable white base).
-local COMBO_POINT_ATLAS = "UI-RogueCP-Slash-Blue"
-
 local function RebuildPips(maxPoints)
     local db = addon.GetDB().comboPoints
     for _, pip in ipairs(pips) do
@@ -27,28 +19,16 @@ local function RebuildPips(maxPoints)
         pip:SetSize(db.pointSize, db.pointSize)
         pip:SetPoint("LEFT", row, "LEFT", (i - 1) * (db.pointSize + db.spacing), 0)
 
-        -- Always-visible faint background so the row's slots show even
-        -- with 0 combo points, instead of the whole row being invisible
-        -- until something's filled.
+        -- Faint background, always visible, so empty slots still show.
         local bg = pip:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints(pip)
         bg:SetColorTexture(1, 1, 1, 0.15)
         pip.bg = bg
 
+        -- Solid blue box, hidden until this point is actually filled.
         local tex = pip:CreateTexture(nil, "ARTWORK")
         tex:SetAllPoints(pip)
-        -- false = scale to our own pip size rather than the atlas's
-        -- native dimensions.
-        local ok = tex.SetAtlas and pcall(tex.SetAtlas, tex, COMBO_POINT_ATLAS, false)
-        if i == 1 then
-            print(("ForeverRogue UI: combo pip atlas '%s' %s"):format(
-                COMBO_POINT_ATLAS, ok and "applied OK" or "FAILED - falling back to a red square"))
-        end
-        if not ok then
-            -- This client doesn't have the atlas after all - fall back
-            -- to a plain red square rather than showing nothing.
-            tex:SetColorTexture(1, 0, 0, 1)
-        end
+        tex:SetColorTexture(0.1, 0.5, 1, 1)
         pip.texture = tex
 
         pips[i] = pip
