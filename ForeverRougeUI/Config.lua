@@ -73,6 +73,7 @@ addon.defaults = {
             Garrote = 18,
             ["Kidney Shot"] = 6,
             Gouge = 4,
+            ["Slice and Dice"] = 18,
         },
 
         -- For abilities whose fallback duration depends on combo points
@@ -103,6 +104,7 @@ addon.defaults = {
         -- Buffs on yourself - same idea, read from your own auras.
         playerBuffs = {
             "Blade Flurry",
+            "Slice and Dice",
         },
     },
 }

@@ -113,3 +113,82 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
         print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env, /frui auras <unit> <filter>, /frui auralog on|off, /frui combo")
     end
 end
+
+-- In-game Options panel (Game Menu / Esc > Options > AddOns, or the
+-- Interface/AddOns settings screen depending on client version) so the
+-- scale can be adjusted without typing slash commands.
+local function CreateOptionsPanel()
+    local panel = CreateFrame("Frame")
+    panel.name = "ForeverRogue UI"
+
+    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText("ForeverRogue UI")
+
+    local scaleLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    scaleLabel:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -28)
+    scaleLabel:SetText("UI Scale")
+
+    local slider = CreateFrame("Slider", "ForeverRougeUIScaleSlider", panel, "OptionsSliderTemplate")
+    slider:SetPoint("TOPLEFT", scaleLabel, "BOTTOMLEFT", 4, -20)
+    slider:SetWidth(220)
+    slider:SetMinMaxValues(0.5, 2.0)
+    slider:SetValueStep(0.05)
+    slider:SetObeyStepOnDrag(true)
+    slider.Low:SetText("0.5")
+    slider.High:SetText("2.0")
+    slider.Text:SetText(" ")
+
+    local sliderValueText = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    sliderValueText:SetPoint("LEFT", slider, "RIGHT", 10, 2)
+
+    local updatingFromDB = false
+    slider:SetScript("OnValueChanged", function(self, value)
+        if updatingFromDB then return end
+        value = math.floor(value * 100 + 0.5) / 100
+        addon.GetDB().scale = value
+        ApplyPosition()
+        sliderValueText:SetText(("%.2f"):format(value))
+    end)
+
+    local lockCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
+    lockCheckbox:SetPoint("TOPLEFT", slider, "BOTTOMLEFT", -4, -32)
+    lockCheckbox.Text:SetText("Lock position")
+    lockCheckbox:SetScript("OnClick", function(self)
+        addon.GetDB().locked = self:GetChecked() and true or false
+        ApplyLock()
+    end)
+
+    local resetButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    resetButton:SetSize(120, 22)
+    resetButton:SetPoint("TOPLEFT", lockCheckbox, "BOTTOMLEFT", 4, -16)
+    resetButton:SetText("Reset Position")
+    resetButton:SetScript("OnClick", function()
+        local db = addon.GetDB()
+        db.point, db.x, db.y = addon.defaults.point, addon.defaults.x, addon.defaults.y
+        ApplyPosition()
+    end)
+
+    panel:SetScript("OnShow", function()
+        local db = addon.GetDB()
+        updatingFromDB = true
+        slider:SetValue(db.scale)
+        sliderValueText:SetText(("%.2f"):format(db.scale))
+        lockCheckbox:SetChecked(db.locked)
+        updatingFromDB = false
+    end)
+
+    if Settings and Settings.RegisterCanvasLayoutCategory then
+        local category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+        Settings.RegisterAddOnCategory(category)
+    elseif InterfaceOptions_AddCategory then
+        InterfaceOptions_AddCategory(panel)
+    else
+        print("ForeverRogue UI: no in-game Options panel API found on this client - use /frui scale <n> instead.")
+    end
+end
+
+local ok, err = pcall(CreateOptionsPanel)
+if not ok then
+    print("ForeverRogue UI: couldn't create the Options panel (" .. tostring(err) .. ") - use /frui scale <n> instead.")
+end

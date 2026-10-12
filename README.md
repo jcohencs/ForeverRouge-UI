@@ -36,6 +36,11 @@ the middle of the screen. Drag it into place:
 - `/frui reset` — reset position to default
 - `/frui scale 1.2` — resize the whole HUD
 
+Or use the in-game Options panel instead of slash commands: open the
+game menu (Esc) → Options → AddOns (or Interface → AddOns on older
+clients) → **ForeverRogue UI**, for a scale slider, a lock checkbox, and
+a reset button.
+
 ## The tracker row
 
 One row, anchored directly above the energy bar, always auto-centered
@@ -58,6 +63,7 @@ tracker = {
     },
     playerBuffs = {     -- buffs on yourself
         "Blade Flurry",
+        "Slice and Dice",
     },
 },
 ```
