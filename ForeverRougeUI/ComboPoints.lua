@@ -40,7 +40,7 @@ local function RebuildPips(maxPoints)
         tex:SetPoint("TOPLEFT", pip, "TOPLEFT", 2, -2)
         tex:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", -2, 2)
         tex:SetTexture(ROUND_ICON)
-        tex:SetVertexColor(1, 0.2, 0.2, 1)
+        tex:SetVertexColor(1, 0.08, 0.08, 1) -- brighter, more saturated red
         pip.texture = tex
 
         pips[i] = pip

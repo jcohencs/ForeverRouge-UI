@@ -299,19 +299,44 @@ local function UpdateIcon(iconFrame)
     end
 end
 
-local function ReflowVisibleIcons(iconSize, spacing)
+-- Left-to-right rank for a currently-visible icon: its position in
+-- tracker.displayOrder, or (if not listed there) after everything that
+-- is, keeping its original relative order among the other unlisted ones.
+local function GetDisplayRank(displayOrder, spellName)
+    if displayOrder then
+        for i, name in ipairs(displayOrder) do
+            if name == spellName then
+                return i
+            end
+        end
+    end
+    return math.huge
+end
+
+local function ReflowVisibleIcons(iconSize, spacing, displayOrder)
     local visible = {}
-    for _, iconFrame in ipairs(icons) do
+    for originalIndex, iconFrame in ipairs(icons) do
         if iconFrame:IsShown() then
-            visible[#visible + 1] = iconFrame
+            visible[#visible + 1] = {
+                frame = iconFrame,
+                rank = GetDisplayRank(displayOrder, iconFrame.spellName),
+                originalIndex = originalIndex,
+            }
         end
     end
 
+    table.sort(visible, function(a, b)
+        if a.rank ~= b.rank then
+            return a.rank < b.rank
+        end
+        return a.originalIndex < b.originalIndex
+    end)
+
     local count = #visible
     row:SetSize(math.max(count * iconSize + math.max(0, count - 1) * spacing, 1), iconSize)
-    for i, iconFrame in ipairs(visible) do
-        iconFrame:ClearAllPoints()
-        iconFrame:SetPoint("LEFT", row, "LEFT", (i - 1) * (iconSize + spacing), 0)
+    for i, entry in ipairs(visible) do
+        entry.frame:ClearAllPoints()
+        entry.frame:SetPoint("LEFT", row, "LEFT", (i - 1) * (iconSize + spacing), 0)
     end
 end
 
@@ -320,7 +345,7 @@ local function UpdateAll()
         UpdateIcon(iconFrame)
     end
     local db = addon.GetDB().tracker
-    ReflowVisibleIcons(db.iconSize, db.spacing)
+    ReflowVisibleIcons(db.iconSize, db.spacing, db.displayOrder)
 end
 
 local function CreateIcon(db, kind, spellName)

@@ -34,7 +34,6 @@ addon.defaults = {
             "Kick",
             "Blind",
             "Evasion",
-            "Sprint",
             "Vanish",
             "Cloak of Shadows",
             "Adrenaline Rush",
@@ -106,25 +105,43 @@ addon.defaults = {
             "Blade Flurry",
             "Slice and Dice",
         },
+
+        -- Left-to-right order for whichever icons are currently active
+        -- (not creation order). Anything not listed here falls after
+        -- these, in whatever order it'd otherwise appear.
+        displayOrder = {
+            "Slice and Dice",
+            "Rupture",
+            "Blade Flurry",
+        },
     },
 }
+
+-- Only these are genuine user-adjusted state that should survive
+-- between sessions (set via the Options panel, /frui, or dragging).
+local PERSISTED_KEYS = { "point", "x", "y", "scale", "locked" }
 
 function addon.GetDB()
     ForeverRougeUIDB = ForeverRougeUIDB or {}
     local db = ForeverRougeUIDB
 
-    -- shallow-merge defaults into saved vars without clobbering user changes
-    local function merge(dst, src)
-        for k, v in pairs(src) do
-            if type(v) == "table" then
-                dst[k] = dst[k] or {}
-                merge(dst[k], v)
-            elseif dst[k] == nil then
-                dst[k] = v
-            end
+    for _, key in ipairs(PERSISTED_KEYS) do
+        if db[key] == nil then
+            db[key] = addon.defaults[key]
         end
     end
 
-    merge(db, addon.defaults)
+    -- Everything else (ability lists, fallback durations, icon sizing,
+    -- etc.) is config that lives in this file, not end-user state. Use
+    -- it fresh every time instead of merging it into the saved table -
+    -- a one-way "fill in missing keys" merge would otherwise let an
+    -- old value saved by an earlier version of this file silently
+    -- shadow an edit made here forever, since editing Config.lua can
+    -- never remove or change a key that's already present in the
+    -- saved copy from a previous session.
+    db.energy = addon.defaults.energy
+    db.comboPoints = addon.defaults.comboPoints
+    db.tracker = addon.defaults.tracker
+
     return db
 end
