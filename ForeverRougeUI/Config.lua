@@ -66,10 +66,26 @@ addon.defaults = {
             ["Adrenaline Rush"] = 180,
             Shadowstep = 20,
             Preparation = 300,
+            -- Rupture's real duration scales with combo points spent,
+            -- so this flat value is only the last-resort if
+            -- comboScaledDurations below (or lastComboPoints tracking)
+            -- somehow isn't available.
             Rupture = 24,
             Garrote = 18,
             ["Kidney Shot"] = 6,
             Gouge = 4,
+        },
+
+        -- For abilities whose fallback duration depends on combo points
+        -- spent rather than being a flat number: duration = base +
+        -- perPoint * (combo points spent on the finisher). The addon
+        -- tracks the combo point count right up until a finisher
+        -- consumes it, so this reflects what you actually spent, not a
+        -- guess. Rupture's modern baseline is 4 + 4 per point (8s at
+        -- 1 CP, 24s at 5 CP) - adjust to match what you see in-game if
+        -- this server's formula differs.
+        comboScaledDurations = {
+            Rupture = { base = 4, perPoint = 4 },
         },
 
         -- Debuffs you apply to your current target. Tries to read the

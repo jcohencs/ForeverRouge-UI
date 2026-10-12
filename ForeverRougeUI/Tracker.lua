@@ -115,11 +115,42 @@ end
 
 local warnedNoFallback = {}
 
+-- Some finishers' effect scales with combo points spent (Rupture's
+-- duration, for one). Combo points reset to 0 the moment the finisher
+-- lands, before we'd ever get a chance to read them - so this tracks
+-- the last-seen *nonzero* combo count continuously, meaning by the
+-- time a finisher's UNIT_SPELLCAST_SUCCEEDED fires, this still holds
+-- however many points were spent on it.
+local lastComboPoints = 0
+
+local function TrackComboPoints()
+    local current = addon.GetComboPoints()
+    if current and current > 0 then
+        lastComboPoints = current
+    end
+end
+
+-- duration = base + perPoint * comboPointsSpent, for abilities whose
+-- fallback timer needs to scale with combo points (see
+-- tracker.comboScaledDurations in Config.lua). Falls back to the flat
+-- tracker.fallbackDurations value for everything else.
+local function GetFallbackDuration(spellName)
+    local fullDB = addon.GetDB()
+    local db = fullDB.tracker
+    local scaling = db.comboScaledDurations and db.comboScaledDurations[spellName]
+    if scaling then
+        local maxPoints = (fullDB.comboPoints and fullDB.comboPoints.maxPoints) or 5
+        local points = math.max(1, math.min(lastComboPoints, maxPoints))
+        return scaling.base + scaling.perPoint * points
+    end
+    return db.fallbackDurations[spellName]
+end
+
 local function OnSpellCastSucceeded(spellID)
     for _, iconFrame in ipairs(icons) do
         if iconFrame.spellID == spellID then
             if iconFrame.kind == "cooldown" and iconFrame.secretMode then
-                local duration = addon.GetDB().tracker.fallbackDurations[iconFrame.spellName]
+                local duration = GetFallbackDuration(iconFrame.spellName)
                 if duration then
                     iconFrame.fallbackStart = GetTime()
                     iconFrame.fallbackDuration = duration
@@ -134,7 +165,7 @@ local function OnSpellCastSucceeded(spellID)
                 -- addons, similar to how interrupt cooldowns are
                 -- sealed). Only ever used if the live read comes up
                 -- empty - see UpdateAuraIcon.
-                local duration = addon.GetDB().tracker.fallbackDurations[iconFrame.spellName]
+                local duration = GetFallbackDuration(iconFrame.spellName)
                 if duration then
                     iconFrame.castFallbackStart = GetTime()
                     iconFrame.castFallbackDuration = duration
@@ -328,16 +359,14 @@ local function CreateIcon(db, kind, spellName)
 
     -- Resolved for every kind, not just "cooldown" - targetDebuff/
     -- playerBuff icons need it too, to match UNIT_SPELLCAST_SUCCEEDED
-    -- and arm their own cast-triggered fallback timer.
+    -- and arm their own cast-triggered fallback timer. The spellbook
+    -- icon is also the only texture source for icons that end up using
+    -- the cast-fallback timer, since a live aura read (which would
+    -- otherwise supply the texture) never succeeds for those.
     local index = addon.GetSpellBookIndex(spellName)
     iconFrame.spellID = index and addon.GetSpellIDForIndex(index)
-
-    if kind == "cooldown" then
-        local texture = addon.GetSpellIconTexture(spellName)
-        iconFrame.texture:SetTexture(texture or "Interface\\Icons\\INV_Misc_QuestionMark")
-    else
-        iconFrame.texture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-    end
+    local texture = addon.GetSpellIconTexture(spellName)
+    iconFrame.texture:SetTexture(texture or "Interface\\Icons\\INV_Misc_QuestionMark")
 
     icons[#icons + 1] = iconFrame
     return iconFrame
@@ -378,11 +407,15 @@ function addon.InitTracker()
     addon.SafeRegisterUnitEvent(watcher, "UNIT_SPELLCAST_SUCCEEDED", "player")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "target")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "player")
+    addon.SafeRegisterUnitEvent(watcher, "UNIT_POWER_UPDATE", "player")
+    addon.SafeRegisterUnitEvent(watcher, "UNIT_POWER_FREQUENT", "player")
     watcher:SetScript("OnEvent", function(_, event, unit, _, spellID)
         if event == "UNIT_SPELLCAST_SUCCEEDED" and unit == "player" then
             OnSpellCastSucceeded(spellID)
         elseif event == "PLAYER_TARGET_CHANGED" then
             OnTargetChanged()
+        elseif event == "UNIT_POWER_UPDATE" or event == "UNIT_POWER_FREQUENT" then
+            TrackComboPoints()
         end
         UpdateAll()
     end)
