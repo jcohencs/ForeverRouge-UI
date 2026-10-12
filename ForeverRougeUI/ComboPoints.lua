@@ -14,10 +14,13 @@ local function RebuildPips(maxPoints)
     local totalWidth = maxPoints * db.pointSize + math.max(0, maxPoints - 1) * db.spacing
     row:SetSize(totalWidth, db.pointSize)
 
-    -- Plain solid-color textures, clipped into circles with an alpha
-    -- mask - this is a flat RGB fill with no base-texture brightness to
-    -- fight against, so the red comes out exactly as bright as set.
-    local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
+    -- A real round texture we ship with the addon (media/circle.tga) -
+    -- :SetMask doesn't work reliably on this server's client, so a
+    -- pre-made circular image, tinted via vertex color, is the only
+    -- approach that's actually gotten a circle to render. It's pure
+    -- white where opaque, so tinting gives the exact color back with
+    -- no brightness cap from the base art.
+    local CIRCLE_TEXTURE = "Interface\\AddOns\\ForeverRougeUI\\media\\circle"
 
     for i = 1, maxPoints do
         local pip = CreateFrame("Frame", nil, row)
@@ -29,8 +32,8 @@ local function RebuildPips(maxPoints)
         -- point is filled.
         local outline = pip:CreateTexture(nil, "BORDER")
         outline:SetAllPoints(pip)
-        outline:SetColorTexture(0, 0, 0, 1)
-        outline:SetMask(CIRCLE_MASK)
+        outline:SetTexture(CIRCLE_TEXTURE)
+        outline:SetVertexColor(0, 0, 0, 1)
         pip.outline = outline
 
         -- Colored fill, inset slightly so the outline reads as a ring,
@@ -38,8 +41,8 @@ local function RebuildPips(maxPoints)
         local tex = pip:CreateTexture(nil, "ARTWORK")
         tex:SetPoint("TOPLEFT", pip, "TOPLEFT", 2, -2)
         tex:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", -2, 2)
-        tex:SetColorTexture(1, 0, 0, 1) -- pure, maximally bright red
-        tex:SetMask(CIRCLE_MASK)
+        tex:SetTexture(CIRCLE_TEXTURE)
+        tex:SetVertexColor(1, 0, 0, 1) -- pure, maximally bright red
         pip.texture = tex
 
         pips[i] = pip

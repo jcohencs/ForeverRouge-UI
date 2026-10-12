@@ -55,7 +55,7 @@ It tracks three kinds of things, configured in `Config.lua` under
 ```lua
 tracker = {
     cooldowns = {       -- true ability reuse cooldowns
-        "Kick", "Blind", "Vanish",
+        "Kick", "Blind",
         "Cloak of Shadows", "Adrenaline Rush", "Shadowstep", "Preparation",
     },
     targetDebuffs = {   -- things you put on your target
@@ -76,12 +76,11 @@ tracker = {
   row.
 - **targetDebuffs**: for stuff you apply to your current target
   (bleeds, Kidney Shot's stun, Gouge). Tries to read the aura's *real*
-  remaining duration first (exact, no `*`) — but this server appears to
-  hide enemy debuff durations from addons entirely for some effects
-  (Rupture/Gouge/Kidney Shot never read live here), so if that comes
-  back empty it falls back to a self-timed estimate from
-  `fallbackDurations` instead, same idea as the sealed-cooldown
-  fallback below.
+  remaining duration first — but this server appears to hide enemy
+  debuff durations from addons entirely for some effects (Rupture/
+  Gouge/Kidney Shot never read live here), so if that comes back empty
+  it falls back to a self-timed estimate from `fallbackDurations`
+  instead, same idea as the sealed-cooldown fallback below.
 - **playerBuffs**: same idea, for buffs on yourself. Evasion and Sprint
   live here rather than in `cooldowns`, so you see their active buff
   duration instead of their (much longer) full reuse cooldown.
@@ -119,15 +118,14 @@ For anything in `tracker.cooldowns`/`targetDebuffs`/`playerBuffs` that
 turns out unreadable, the addon instead times it itself using
 `tracker.fallbackDurations`: the moment you cast it, it starts its own
 stopwatch using the approximate duration you've set there and counts
-down normally (glow included). Its countdown text gets a trailing `*`
-as a reminder it's an estimate — if the real duration differs (talents,
-gear, combo points, etc.), adjust the number to match what you see
-in-game. Fallback durations are preset for every ability in the default
-lists, but they're only ever used as a backup — anything that reads
-live fine just ignores its fallback number and shows the exact value
-(no `*`). If you ever see the chat message "`<ability>`'s cooldown is
-sealed... no fallback duration is set" for a *new* ability you've added,
-give it an entry in `fallbackDurations` too.
+down normally — if the real duration differs (talents, gear, combo
+points, etc.), adjust the number to match what you see in-game.
+Fallback durations are preset for every ability in the default lists,
+but they're only ever used as a backup — anything that reads live fine
+just ignores its fallback number and shows the exact value. If you ever
+see the chat message "`<ability>`'s cooldown is sealed... no fallback
+duration is set" for a *new* ability you've added, give it an entry in
+`fallbackDurations` too.
 
 If an ability still doesn't show up at all even with a fallback
 configured, run `/frui debug <name>` to check its spellbook lookup, or

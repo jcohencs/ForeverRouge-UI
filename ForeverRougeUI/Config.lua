@@ -33,7 +33,6 @@ addon.defaults = {
         cooldowns = {
             "Kick",
             "Blind",
-            "Vanish",
             "Cloak of Shadows",
             "Adrenaline Rush",
             "Shadowstep",
@@ -47,17 +46,14 @@ addon.defaults = {
         -- Rupture/Gouge/Kidney Shot's real remaining time on target
         -- isn't readable at all here either. For any ability above (or
         -- in targetDebuffs/playerBuffs below) that turns out unreadable,
-        -- this approximate duration is used instead: the timer starts
-        -- from when you cast it rather than reading the real value, so
-        -- it won't auto-adjust if a talent changes the real duration,
-        -- and its countdown text gets a trailing "*" as a reminder it's
-        -- an estimate. Anything that reads live fine just ignores this
-        -- and shows the exact value (no "*"). These are rough baseline
-        -- values - adjust any that don't match what you actually see.
+        -- this approximate duration is used instead, started from when
+        -- you cast it rather than reading the real value, so it won't
+        -- auto-adjust if a talent changes the real duration. These are
+        -- rough baseline values - adjust any that don't match what you
+        -- actually see.
         fallbackDurations = {
             Kick = 15,
             Blind = 120,
-            Vanish = 120,
             ["Cloak of Shadows"] = 120,
             ["Adrenaline Rush"] = 180,
             Shadowstep = 20,
@@ -97,11 +93,11 @@ addon.defaults = {
         },
 
         -- Debuffs you apply to your current target. Tries to read the
-        -- aura's real remaining duration first (exact, no "*"); if that
-        -- comes back empty on this server, falls back to the estimate
-        -- above, started from when you cast it. Shown only while
-        -- actually up, gone the instant it falls off or you switch
-        -- target (or, for the fallback estimate, once its time's up).
+        -- aura's real remaining duration first; if that comes back
+        -- empty on this server, falls back to the estimate above,
+        -- started from when you cast it. Shown only while actually up,
+        -- gone the instant it falls off or you switch target (or, for
+        -- the fallback estimate, once its time's up).
         targetDebuffs = {
             "Rupture",
             "Garrote",

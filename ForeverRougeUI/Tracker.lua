@@ -31,11 +31,15 @@ local GCD_THRESHOLD = 1.6
 -- actually be ending.
 local AURA_FLAKE_GRACE = 2.5
 
+-- Floors rather than rounds up, so the number never overstates how
+-- much time is actually left - rounding up would show e.g. "1" for the
+-- entire last second before an ability is really ready, which reads as
+-- the tracker lagging behind the real timer.
 local function FormatTime(remaining)
     if remaining >= 60 then
-        return ("%dm"):format(math.ceil(remaining / 60))
+        return ("%dm"):format(math.floor(remaining / 60))
     elseif remaining > 3 then
-        return ("%d"):format(math.ceil(remaining))
+        return ("%d"):format(math.floor(remaining))
     else
         return ("%.1f"):format(remaining)
     end
@@ -69,7 +73,7 @@ local function UpdateSecretCooldownIcon(iconFrame)
     end
 
     iconFrame:Show()
-    iconFrame.text:SetText(FormatTime(remaining) .. "*")
+    iconFrame.text:SetText(FormatTime(remaining))
 end
 
 local function UpdateCooldownIcon(iconFrame)
@@ -209,7 +213,7 @@ end
 
 local function ShowFromCastFallback(iconFrame, remaining)
     iconFrame:Show()
-    iconFrame.text:SetText(FormatTime(remaining) .. "*")
+    iconFrame.text:SetText(FormatTime(remaining))
 end
 
 local function UpdateAuraIcon(iconFrame)
