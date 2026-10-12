@@ -56,11 +56,11 @@ eventFrame:SetScript("OnEvent", function(_, event)
     end
     frame:Show()
 
-    -- Order matters: the tracker row anchors above the energy bar, and
-    -- combo points anchor below it.
+    -- Order matters: the tracker row anchors above the energy bar.
+    -- Combo points aren't drawn by this addon - Blizzard's own Personal
+    -- Resource Display already shows them above your character.
     if addon.InitEnergy then addon.InitEnergy() end
     if addon.InitTracker then addon.InitTracker() end
-    if addon.InitComboPoints then addon.InitComboPoints() end
 end)
 
 SLASH_FOREVERROGUEUI1 = "/frui"
