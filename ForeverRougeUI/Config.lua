@@ -51,6 +51,18 @@ addon.defaults = {
             "Shadowstep",
             "Preparation",
         },
+
+        -- Blizzard seals the real cooldown for interrupt-type abilities
+        -- (Kick here) so addons can't read it - an anti-sniping measure
+        -- for PvP. For those abilities only, give an approximate
+        -- cooldown here so a timer can still be shown; it's started from
+        -- when you cast it and won't auto-adjust if a talent changes the
+        -- real cooldown, so its countdown text gets a trailing "*" as a
+        -- reminder it's an estimate. Abilities not listed here don't
+        -- need this - they're read live and are exact.
+        fallbackDurations = {
+            Kick = 15,
+        },
     },
 }
 

@@ -51,15 +51,20 @@ reasons: it's not currently in your spellbook (wrong spec, or on this
 server's rune-engraving system the rune isn't engraved yet), or the name
 in `Config.lua` doesn't exactly match the one in your spellbook.
 
-### Interrupts (Kick) look slightly different, on purpose
+### Interrupts (Kick) are an estimate, on purpose
 
-Blizzard deliberately hides the raw cooldown numbers for interrupt-type
-abilities from addons (an anti-sniping measure for PvP), so Kick can't be
-tracked the same custom way as Sprint/Vanish/etc. For those abilities the
-icon still shows up the moment you use it and disappears once it's ready
-again, but the countdown number is Blizzard's own built-in one instead of
-this addon's styled text, and there's no 5-second "coming up" glow. That's
-a platform restriction, not a bug.
+Blizzard deliberately seals the real cooldown numbers for interrupt-type
+abilities from addons entirely (an anti-sniping measure for PvP) - not
+even passing the value through to another API is allowed, so there's no
+way to read Kick's actual cooldown from here. For abilities like that
+(configured under `cooldowns.fallbackDurations` in `Config.lua`, Kick by
+default), the addon instead times it itself: the moment you cast it, it
+starts its own stopwatch using the approximate cooldown you've set there
+and counts down normally (glow included). Its countdown text gets a
+trailing `*` as a reminder it's an estimate - if a talent changes Kick's
+real cooldown, update the number in `fallbackDurations` to match.
+Sprint, Vanish, and everything else aren't sealed and track exactly, with
+no `*`.
 
 ## Configuring tracked abilities
 

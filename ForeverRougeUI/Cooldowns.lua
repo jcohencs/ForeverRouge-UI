@@ -23,22 +23,46 @@ end
 
 -- Blizzard deliberately "seals" the cooldown numbers for some abilities
 -- (interrupts especially, like Kick) so addons can't do math on them -
--- an anti cooldown-sniping measure for PvP. Trying to use those values
--- in our own arithmetic throws a hard error. When that happens we flag
--- the icon as secretMode and hand the raw values straight through to
--- Blizzard's own Cooldown widget instead, which is allowed to read them
--- internally even though we can't: it draws its own swipe and its own
--- countdown number, and tells us (via OnCooldownDone) when it's over.
-local function ArmSecureCooldown(iconFrame, start, duration)
-    iconFrame.cooldown:SetHideCountdownNumbers(false)
-    iconFrame.cooldown:SetScript("OnCooldownDone", function()
+-- an anti cooldown-sniping measure for PvP. Even just handing a sealed
+-- value to another API (like the Cooldown widget's SetCooldown) is
+-- blocked, not just our own math on it - there's no way to read or
+-- relay the real value at all. So for these we never touch the sealed
+-- value: we track the cast ourselves with our own GetTime() (that clock
+-- is ours, not sealed) plus a configured approximate duration, and
+-- render the countdown exactly like a normal tracked ability.
+local function ArmFallbackCooldown(iconFrame, duration)
+    iconFrame.fallbackStart = GetTime()
+    iconFrame.fallbackDuration = duration
+    iconFrame.cooldown:SetHideCountdownNumbers(true)
+end
+
+local function UpdateSecretIcon(iconFrame)
+    if not iconFrame.fallbackStart then
+        return -- waiting for a cast event to arm it; nothing to show
+    end
+
+    local remaining = (iconFrame.fallbackStart + iconFrame.fallbackDuration) - GetTime()
+    if remaining <= 0 then
+        iconFrame.fallbackStart = nil
+        iconFrame.cooldown:Hide()
         iconFrame.glow:Hide()
+        iconFrame.text:SetText("")
         iconFrame:Hide()
-    end)
-    iconFrame.cooldown:SetCooldown(start, duration)
-    iconFrame.text:SetText("")
-    iconFrame.glow:Hide()
+        return
+    end
+
     iconFrame:Show()
+    iconFrame.cooldown:SetCooldown(iconFrame.fallbackStart, iconFrame.fallbackDuration)
+    iconFrame.cooldown:Show()
+    iconFrame.text:SetText(FormatTime(remaining) .. "*")
+
+    if remaining <= READY_SOON_THRESHOLD then
+        iconFrame.glow:Show()
+        local pulse = 0.5 + 0.5 * math.abs(math.sin(GetTime() * 6))
+        iconFrame.glow:SetAlpha(pulse)
+    else
+        iconFrame.glow:Hide()
+    end
 end
 
 local function UpdateIcon(iconFrame)
@@ -49,8 +73,7 @@ local function UpdateIcon(iconFrame)
     end
 
     if iconFrame.secretMode then
-        -- Fully event-driven for this one: OnSpellCastSucceeded shows it,
-        -- the Cooldown widget's own OnCooldownDone hides it.
+        UpdateSecretIcon(iconFrame)
         return
     end
 
@@ -90,12 +113,19 @@ local function UpdateAll()
     end
 end
 
+local warnedNoFallback = {}
+
 local function OnSpellCastSucceeded(unit, spellID)
     if unit ~= "player" or not spellID then return end
     for _, iconFrame in ipairs(icons) do
         if iconFrame.secretMode and iconFrame.spellID == spellID then
-            local start, duration = addon.GetSpellCooldownInfo(iconFrame.spellName)
-            ArmSecureCooldown(iconFrame, start, duration)
+            local duration = addon.GetDB().cooldowns.fallbackDurations[iconFrame.spellName]
+            if duration then
+                ArmFallbackCooldown(iconFrame, duration)
+            elseif not warnedNoFallback[iconFrame.spellName] then
+                warnedNoFallback[iconFrame.spellName] = true
+                print(("ForeverRogue UI: %s's cooldown is sealed by the client and no fallback duration is set - add one under cooldowns.fallbackDurations in Config.lua to track it."):format(iconFrame.spellName))
+            end
         end
     end
 end
