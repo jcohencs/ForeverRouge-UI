@@ -72,7 +72,11 @@ addon.defaults = {
             Garrote = 18,
             ["Kidney Shot"] = 6,
             Gouge = 4,
-            ["Slice and Dice"] = 18,
+            -- Slice and Dice's real duration scales with combo points
+            -- spent (see comboScaledDurations below, which takes
+            -- priority) - this flat value is never actually used, just
+            -- a safety net.
+            ["Slice and Dice"] = 12,
         },
 
         -- For abilities whose fallback duration depends on combo points
@@ -80,11 +84,12 @@ addon.defaults = {
         -- perPoint * (combo points spent on the finisher). The addon
         -- tracks the combo point count right up until a finisher
         -- consumes it, so this reflects what you actually spent, not a
-        -- guess. This server's Rupture is 6 + 2 per point (8s at 1 CP
-        -- up to 16s at 5 CP, confirmed in-game) - adjust if that ever
-        -- changes.
+        -- guess. Confirmed in-game: Rupture is 6 + 2 per point (8s at
+        -- 1 CP up to 16s at 5 CP), Slice and Dice is 9 + 3 per point
+        -- (12s at 1 CP up to 24s at 5 CP) - adjust if either ever changes.
         comboScaledDurations = {
             Rupture = { base = 6, perPoint = 2 },
+            ["Slice and Dice"] = { base = 9, perPoint = 3 },
         },
 
         -- Debuffs you apply to your current target. Tries to read the
