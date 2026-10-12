@@ -89,6 +89,8 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
         else
             print("ForeverRogue UI: usage /frui scale 1.0")
         end
+    elseif msg == "env" then
+        if addon.DebugEnvironment then addon.DebugEnvironment() end
     elseif msg:match("^debug") then
         local spellName = msg:match("^debug%s+(.+)$")
         if spellName and addon.DebugSpell then
@@ -97,6 +99,6 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
             print("ForeverRogue UI: usage /frui debug <spell name>")
         end
     else
-        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>")
+        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env")
     end
 end

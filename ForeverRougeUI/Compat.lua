@@ -218,6 +218,50 @@ function addon.GetUnitAuraByIndex(unit, index, filter)
     return nil
 end
 
+-- Debug helper: /frui env prints which spellbook/cooldown APIs this
+-- client actually exposes, so we can target the real API instead of
+-- guessing at another combination blind.
+function addon.DebugEnvironment()
+    local function yn(v) return v and "yes" or "no" end
+
+    print("ForeverRogue UI environment probe:")
+    print("  GetNumSpellTabs: " .. yn(type(GetNumSpellTabs) == "function"))
+    print("  GetSpellTabInfo: " .. yn(type(GetSpellTabInfo) == "function"))
+    print("  GetSpellBookItemName: " .. yn(type(GetSpellBookItemName) == "function"))
+    print("  GetSpellBookItemTexture: " .. yn(type(GetSpellBookItemTexture) == "function"))
+    print("  GetSpellBookItemInfo: " .. yn(type(GetSpellBookItemInfo) == "function"))
+    print("  GetSpellCooldown: " .. yn(type(GetSpellCooldown) == "function"))
+    print("  GetSpellTexture: " .. yn(type(GetSpellTexture) == "function"))
+    print("  GetSpellInfo: " .. yn(type(GetSpellInfo) == "function"))
+    print("  C_SpellBook: " .. yn(C_SpellBook ~= nil))
+    if C_SpellBook then
+        for _, fn in ipairs({ "GetNumSpellBookSkillLines", "GetSpellBookSkillLineInfo", "GetSpellBookItemName", "GetSpellBookItemInfo", "GetSpellBookItemTexture" }) do
+            print("    C_SpellBook." .. fn .. ": " .. yn(type(C_SpellBook[fn]) == "function"))
+        end
+    end
+    print("  C_Spell: " .. yn(C_Spell ~= nil))
+    if C_Spell then
+        for _, fn in ipairs({ "GetSpellCooldown", "GetSpellTexture", "GetSpellInfo", "GetSpellIdForName", "GetSpellName" }) do
+            print("    C_Spell." .. fn .. ": " .. yn(type(C_Spell[fn]) == "function"))
+        end
+    end
+    print("  C_UnitAuras: " .. yn(C_UnitAuras ~= nil))
+    print("  UnitAura: " .. yn(type(UnitAura) == "function"))
+
+    if type(GetNumSpellTabs) == "function" then
+        local ok, n = pcall(GetNumSpellTabs)
+        print("  GetNumSpellTabs() = " .. tostring(ok and n))
+        if ok and n and n > 0 then
+            local okTab, name, _, offset, numSpells = pcall(GetSpellTabInfo, 1)
+            print("  GetSpellTabInfo(1) = " .. tostring(okTab) .. " " .. tostring(name) .. " offset=" .. tostring(offset) .. " numSpells=" .. tostring(numSpells))
+        end
+    end
+    if C_SpellBook and type(C_SpellBook.GetNumSpellBookSkillLines) == "function" then
+        local ok, n = pcall(C_SpellBook.GetNumSpellBookSkillLines)
+        print("  C_SpellBook.GetNumSpellBookSkillLines() = " .. tostring(ok and n))
+    end
+end
+
 -- Debug helper: /frui debug <ability name> prints what each lookup path
 -- returns, to diagnose a specific ability that still won't show up.
 function addon.DebugSpell(name)
