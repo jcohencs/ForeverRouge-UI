@@ -27,11 +27,23 @@ local function RebuildPips(maxPoints)
         pip:SetSize(db.pointSize, db.pointSize)
         pip:SetPoint("LEFT", row, "LEFT", (i - 1) * (db.pointSize + db.spacing), 0)
 
+        -- Always-visible faint background so the row's slots show even
+        -- with 0 combo points, instead of the whole row being invisible
+        -- until something's filled.
+        local bg = pip:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints(pip)
+        bg:SetColorTexture(1, 1, 1, 0.15)
+        pip.bg = bg
+
         local tex = pip:CreateTexture(nil, "ARTWORK")
         tex:SetAllPoints(pip)
         -- false = scale to our own pip size rather than the atlas's
         -- native dimensions.
         local ok = tex.SetAtlas and pcall(tex.SetAtlas, tex, COMBO_POINT_ATLAS, false)
+        if i == 1 then
+            print(("ForeverRogue UI: combo pip atlas '%s' %s"):format(
+                COMBO_POINT_ATLAS, ok and "applied OK" or "FAILED - falling back to a red square"))
+        end
         if not ok then
             -- This client doesn't have the atlas after all - fall back
             -- to a plain red square rather than showing nothing.
