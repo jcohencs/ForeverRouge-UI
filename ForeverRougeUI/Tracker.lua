@@ -230,6 +230,17 @@ local function ShowFromCastFallback(iconFrame, remaining)
 end
 
 local function UpdateAuraIcon(iconFrame)
+    -- Keep retrying the spellbook texture, the same way cooldown-kind
+    -- icons do every tick. These icons only otherwise get a texture
+    -- from a live aura read, which never succeeds for some of them
+    -- (the cast-fallback path doesn't carry one) - so if the very first
+    -- lookup happened before the spellbook was fully populated, nothing
+    -- would ever correct it without this.
+    local spellTexture = addon.GetSpellIconTexture(iconFrame.spellName)
+    if spellTexture and iconFrame.texture:GetTexture() ~= spellTexture then
+        iconFrame.texture:SetTexture(spellTexture)
+    end
+
     local unit = iconFrame.kind == "playerBuff" and "player" or "target"
     local filter = iconFrame.kind == "playerBuff" and "HELPFUL" or "HARMFUL"
     local targetGone = unit == "target" and not UnitExists("target")
