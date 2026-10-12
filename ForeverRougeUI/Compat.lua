@@ -197,6 +197,27 @@ function addon.GetSpellIconTexture(name)
     return nil
 end
 
+-- Returns name, icon, duration, expirationTime, source for the aura at
+-- a given index on a unit, regardless of whether this client exposes
+-- the old UnitAura() global or only the newer C_UnitAuras namespace.
+function addon.GetUnitAuraByIndex(unit, index, filter)
+    if type(UnitAura) == "function" then
+        local ok, name, icon, _, _, duration, expirationTime, source = pcall(UnitAura, unit, index, filter)
+        if ok and name then
+            return name, icon, duration, expirationTime, source
+        end
+    end
+
+    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+        local ok, data = pcall(C_UnitAuras.GetAuraDataByIndex, unit, index, filter)
+        if ok and data then
+            return data.name, data.icon, data.duration, data.expirationTime, data.sourceUnit
+        end
+    end
+
+    return nil
+end
+
 -- Debug helper: /frui debug <ability name> prints what each lookup path
 -- returns, to diagnose a specific ability that still won't show up.
 function addon.DebugSpell(name)

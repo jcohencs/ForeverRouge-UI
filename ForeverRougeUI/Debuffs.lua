@@ -12,7 +12,7 @@ local row, initialized
 local function FindAura(name)
     name = name:lower()
     for i = 1, 40 do
-        local auraName, icon, _, _, duration, expirationTime, source = UnitAura("target", i, "HARMFUL")
+        local auraName, icon, duration, expirationTime, source = addon.GetUnitAuraByIndex("target", i, "HARMFUL")
         if not auraName then break end
         if auraName:lower() == name and (source == "player" or source == nil) then
             return icon, duration, expirationTime
