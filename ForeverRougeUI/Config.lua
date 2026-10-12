@@ -77,12 +77,14 @@ addon.defaults = {
             Garrote = 18,
             ["Kidney Shot"] = 6,
             Gouge = 4,
-            -- Slice and Dice's/Expose Armor's real duration scales with
-            -- combo points spent (see comboScaledDurations below, which
-            -- takes priority) - these flat values are never actually
-            -- used, just a safety net.
+            -- Slice and Dice's real duration scales with combo points
+            -- spent (see comboScaledDurations below, which takes
+            -- priority) - this flat value is never actually used, just
+            -- a safety net.
             ["Slice and Dice"] = 12,
-            ["Expose Armor"] = 12,
+            -- Expose Armor is flat 30s regardless of combo points spent
+            -- (confirmed in-game) - not combo-scaled like Rupture/SnD.
+            ["Expose Armor"] = 30,
             -- These read live fine, but the live read can flake out for
             -- longer than AURA_FLAKE_GRACE tolerates - this is the
             -- backup that kicks in rather than the icon just vanishing
@@ -100,13 +102,11 @@ addon.defaults = {
         -- guess. Confirmed in-game: Rupture is 6 + 2 per point (8s at
         -- 1 CP up to 16s at 5 CP), Slice and Dice is 6 + 3 per point
         -- (9s at 1 CP up to 21s at 5 CP) - adjust if either ever
-        -- changes. Expose Armor's is an unconfirmed guess (same
-        -- formula as Rupture) - correct it once you've seen its real
-        -- duration in-game.
+        -- changes. Expose Armor is NOT combo-scaled (flat 30s, see
+        -- fallbackDurations above) so it has no entry here.
         comboScaledDurations = {
             Rupture = { base = 6, perPoint = 2 },
             ["Slice and Dice"] = { base = 6, perPoint = 3 },
-            ["Expose Armor"] = { base = 6, perPoint = 2 },
         },
 
         -- Debuffs you apply to your current target. Tries to read the
