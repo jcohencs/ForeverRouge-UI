@@ -17,9 +17,12 @@ or login screen.
 
 ## If it doesn't load
 
-Open `ForeverRougeUI.toc` and change the `## Interface:` line to match your
-client build (listed in a comment right below it). This is the most common
-reason a custom-server addon silently fails to load.
+This server runs a custom core (not a standard Blizzard version), so if a
+future server update marks the addon "incompatible" again: type
+`/run print(GetBuildInfo())` in-game, take the fourth number it prints
+(tocversion), and put that in the `## Interface:` line in
+`ForeverRougeUI.toc`. As of this writing that's `16001` (client reports
+version 1.60.1).
 
 ## Usage
 

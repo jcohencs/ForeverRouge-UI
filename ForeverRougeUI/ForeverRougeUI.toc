@@ -1,4 +1,4 @@
-## Interface: 11507
+## Interface: 16001
 ## Title: ForeverRogue UI
 ## Notes: Rogue cooldown, energy and combo point HUD for WoW Forever.
 ## Author: jcohenworkcontact
@@ -6,9 +6,11 @@
 ## SavedVariables: ForeverRougeUIDB
 ## DefaultState: enabled
 
-## Adjust the Interface line above to match your client's build if the
-## addon fails to load (e.g. 11200 for vanilla 1.12, 20501 for TBC,
-## 30403 for WotLK, 40400 for Cata, 110107 for current retail).
+## Interface number is this server's own custom build (from
+## GetBuildInfo() in-game: version 1.60.1, tocversion 16001) rather than
+## a standard Blizzard release. If it ever stops loading after a server
+## update, re-run "/run print(GetBuildInfo())" in-game and update this
+## line with the new tocversion value.
 
 Config.lua
 Compat.lua
