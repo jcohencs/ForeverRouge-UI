@@ -103,7 +103,11 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
         unit = (unit and unit ~= "") and unit or "target"
         filter = (filter and filter ~= "") and filter:upper() or (unit == "player" and "HELPFUL" or "HARMFUL")
         if addon.DebugAuras then addon.DebugAuras(unit, filter) end
+    elseif msg == "auralog on" then
+        if addon.SetAuraLogging then addon.SetAuraLogging(true) end
+    elseif msg == "auralog off" then
+        if addon.SetAuraLogging then addon.SetAuraLogging(false) end
     else
-        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env, /frui auras <unit> <filter>")
+        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env, /frui auras <unit> <filter>, /frui auralog on|off")
     end
 end

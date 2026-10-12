@@ -248,6 +248,31 @@ function addon.DebugAuras(unit, filter)
     end
 end
 
+-- Debug helper: /frui auralog on|off prints a full aura dump every
+-- single time UNIT_AURA fires for target or player, so catching a
+-- short-lived debuff doesn't depend on timing a manual slash command
+-- right.
+local auraLogFrame
+local auraLogEnabled = false
+
+function addon.SetAuraLogging(enabled)
+    auraLogEnabled = enabled
+
+    if enabled and not auraLogFrame then
+        auraLogFrame = CreateFrame("Frame")
+        addon.SafeRegisterUnitEvent(auraLogFrame, "UNIT_AURA", "target")
+        addon.SafeRegisterUnitEvent(auraLogFrame, "UNIT_AURA", "player")
+        auraLogFrame:SetScript("OnEvent", function(_, event, unit)
+            if not auraLogEnabled then return end
+            print(("ForeverRogue UI aura-log: UNIT_AURA fired on %s"):format(tostring(unit)))
+            addon.DebugAuras(unit, "HARMFUL")
+            addon.DebugAuras(unit, "HELPFUL")
+        end)
+    end
+
+    print("ForeverRogue UI: aura logging " .. (enabled and "ON - watch chat as you apply things." or "OFF") .. ".")
+end
+
 -- Debug helper: /frui env prints which spellbook/cooldown APIs this
 -- client actually exposes, so we can target the real API instead of
 -- guessing at another combination blind.
