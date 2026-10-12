@@ -1,0 +1,18 @@
+## Interface: 11507
+## Title: ForeverRogue UI
+## Notes: Rogue cooldown, energy and combo point HUD for WoW Forever.
+## Author: jcohenworkcontact
+## Version: 1.0.0
+## SavedVariables: ForeverRougeUIDB
+## DefaultState: enabled
+
+## Adjust the Interface line above to match your client's build if the
+## addon fails to load (e.g. 11200 for vanilla 1.12, 20501 for TBC,
+## 30403 for WotLK, 40400 for Cata, 110107 for current retail).
+
+Config.lua
+Compat.lua
+Core.lua
+Cooldowns.lua
+Energy.lua
+ComboPoints.lua

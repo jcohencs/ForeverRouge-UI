@@ -1,0 +1,87 @@
+ForeverRougeUI = ForeverRougeUI or {}
+local addon = ForeverRougeUI
+
+local frame = CreateFrame("Frame", "ForeverRougeUIFrame", UIParent)
+addon.frame = frame
+frame:SetSize(300, 110)
+frame:SetMovable(true)
+frame:SetClampedToScreen(true)
+frame:EnableMouse(false)
+frame:RegisterForDrag("LeftButton")
+frame:SetScript("OnDragStart", frame.StartMoving)
+frame:SetScript("OnDragStop", function(self)
+    self:StopMovingOrSizing()
+    local db = addon.GetDB()
+    local point, _, _, x, y = self:GetPoint()
+    db.point, db.x, db.y = point, x, y
+end)
+
+local function ApplyPosition()
+    local db = addon.GetDB()
+    frame:ClearAllPoints()
+    frame:SetPoint(db.point, UIParent, db.point, db.x, db.y)
+    frame:SetScale(db.scale)
+end
+
+local function ApplyLock()
+    local db = addon.GetDB()
+    frame:EnableMouse(not db.locked)
+end
+
+function addon.IsPlayerRogue()
+    local _, class = UnitClass("player")
+    return class == "ROGUE"
+end
+
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_LOGIN")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_LOGIN" then
+        addon.GetDB()
+        ApplyPosition()
+        ApplyLock()
+    end
+
+    if not addon.IsPlayerRogue() then
+        frame:Hide()
+        return
+    end
+    frame:Show()
+
+    -- Order matters: each row anchors below the previous one.
+    if addon.InitCooldowns then addon.InitCooldowns() end
+    if addon.InitEnergy then addon.InitEnergy() end
+    if addon.InitComboPoints then addon.InitComboPoints() end
+end)
+
+SLASH_FOREVERROGUEUI1 = "/frui"
+SlashCmdList["FOREVERROGUEUI"] = function(msg)
+    msg = strtrim((msg or ""):lower())
+    local db = addon.GetDB()
+
+    if msg == "lock" then
+        db.locked = true
+        ApplyLock()
+        print("ForeverRogue UI: locked.")
+    elseif msg == "unlock" then
+        db.locked = false
+        ApplyLock()
+        print("ForeverRogue UI: unlocked, drag to move.")
+    elseif msg == "reset" then
+        db.point, db.x, db.y, db.scale = addon.defaults.point, addon.defaults.x, addon.defaults.y, addon.defaults.scale
+        ApplyPosition()
+        print("ForeverRogue UI: position reset.")
+    elseif msg:match("^scale") then
+        local value = tonumber(msg:match("scale%s+([%d%.]+)"))
+        if value and value > 0.3 and value < 3 then
+            db.scale = value
+            ApplyPosition()
+            print("ForeverRogue UI: scale set to " .. value)
+        else
+            print("ForeverRogue UI: usage /frui scale 1.0")
+        end
+    else
+        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>")
+    end
+end
