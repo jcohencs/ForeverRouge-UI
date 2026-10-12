@@ -1,10 +1,10 @@
 ForeverRougeUI = ForeverRougeUI or {}
 local addon = ForeverRougeUI
 
--- A single row that tracks three kinds of things, each in its own
--- permanent slot left-aligned to the energy bar (ordered per
--- tracker.displayOrder, Slice and Dice first), showing only while
--- actually active - an inactive one just leaves its slot empty:
+-- A single row that tracks three kinds of things, left-aligned to the
+-- energy bar, showing only the currently-active ones packed together
+-- with no gaps, in priority order (Slice and Dice first, then Expose
+-- Armor, then everything else per tracker.displayOrder/abilityOrder):
 --   "cooldown"     - a true ability reuse cooldown (Kick, Sprint, ...)
 --   "targetDebuff" - a debuff you applied to your target (Rupture,
 --                    Kidney Shot's stun, Gouge) - tracked by the aura's
@@ -356,19 +356,21 @@ end
 -- adding a third one.
 local MAX_ROWS = 2
 
--- Every tracked ability gets its own permanent slot, in rank order,
--- whether or not it's currently active - an inactive one just leaves
--- its slot empty rather than letting the others shift left to fill the
--- gap. Wraps onto a second row, stacked directly above the first, once
--- a single row would run wider than the energy bar itself.
-local function AssignFixedPositions(iconSize, spacing, displayOrder, abilityOrder, maxRowWidth)
+-- Packs only the currently-active icons together, left to right, with
+-- no gaps - in rank order (Slice and Dice first, then Expose Armor,
+-- then everything else). Wraps onto a second row, stacked directly
+-- above the first, once a single row would run wider than the energy
+-- bar itself.
+local function PackVisibleIcons(iconSize, spacing, displayOrder, abilityOrder, maxRowWidth)
     local ordered = {}
     for originalIndex, iconFrame in ipairs(icons) do
-        ordered[#ordered + 1] = {
-            frame = iconFrame,
-            rank = GetRank(displayOrder, abilityOrder, iconFrame.spellName),
-            originalIndex = originalIndex,
-        }
+        if iconFrame:IsShown() then
+            ordered[#ordered + 1] = {
+                frame = iconFrame,
+                rank = GetRank(displayOrder, abilityOrder, iconFrame.spellName),
+                originalIndex = originalIndex,
+            }
+        end
     end
 
     table.sort(ordered, function(a, b)
@@ -406,6 +408,7 @@ local function UpdateAll()
     for _, iconFrame in ipairs(icons) do
         UpdateIcon(iconFrame)
     end
+    addon.RefreshTrackerLayout()
 end
 
 local function CreateIcon(db, kind, spellName)
@@ -448,15 +451,16 @@ local function CreateIcon(db, kind, spellName)
     return iconFrame
 end
 
--- Re-run slot assignment with current config - called once at init,
--- and again from the Options panel whenever the user reorders an
--- ability, so the change shows up immediately.
+-- Re-pack the currently-visible icons with current config - called
+-- every tick from UpdateAll (since which icons are visible changes
+-- constantly), and also directly from the Options panel whenever the
+-- user reorders an ability, so that shows up immediately too.
 function addon.RefreshTrackerLayout()
     if not row then return end
     local db = addon.GetDB().tracker
     local fullDB = addon.GetDB()
     local energyWidth = (fullDB.energy and fullDB.energy.width) or (db.iconSize * 6)
-    AssignFixedPositions(db.iconSize, db.spacing, db.displayOrder, fullDB.abilityOrder, energyWidth)
+    PackVisibleIcons(db.iconSize, db.spacing, db.displayOrder, fullDB.abilityOrder, energyWidth)
 end
 
 function addon.InitTracker()

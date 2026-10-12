@@ -32,10 +32,9 @@ addon.defaults = {
         maxPoints = 5, -- bumped automatically if the server reports more
     },
 
-    -- One row, left-aligned to the energy bar, where every tracked
-    -- ability has its own permanent slot (see displayOrder below for
-    -- the left-to-right order) and shows an icon+countdown only while
-    -- actually active - an inactive one just leaves its slot empty.
+    -- One row, left-aligned to the energy bar, packing only the
+    -- currently-active abilities together with no gaps (see
+    -- displayOrder below for the left-to-right priority order).
     tracker = {
         iconSize = 32,
         spacing = 6,
@@ -78,11 +77,12 @@ addon.defaults = {
             Garrote = 18,
             ["Kidney Shot"] = 6,
             Gouge = 4,
-            -- Slice and Dice's real duration scales with combo points
-            -- spent (see comboScaledDurations below, which takes
-            -- priority) - this flat value is never actually used, just
-            -- a safety net.
+            -- Slice and Dice's/Expose Armor's real duration scales with
+            -- combo points spent (see comboScaledDurations below, which
+            -- takes priority) - these flat values are never actually
+            -- used, just a safety net.
             ["Slice and Dice"] = 12,
+            ["Expose Armor"] = 12,
             -- These read live fine, but the live read can flake out for
             -- longer than AURA_FLAKE_GRACE tolerates - this is the
             -- backup that kicks in rather than the icon just vanishing
@@ -99,10 +99,14 @@ addon.defaults = {
         -- consumes it, so this reflects what you actually spent, not a
         -- guess. Confirmed in-game: Rupture is 6 + 2 per point (8s at
         -- 1 CP up to 16s at 5 CP), Slice and Dice is 6 + 3 per point
-        -- (9s at 1 CP up to 21s at 5 CP) - adjust if either ever changes.
+        -- (9s at 1 CP up to 21s at 5 CP) - adjust if either ever
+        -- changes. Expose Armor's is an unconfirmed guess (same
+        -- formula as Rupture) - correct it once you've seen its real
+        -- duration in-game.
         comboScaledDurations = {
             Rupture = { base = 6, perPoint = 2 },
             ["Slice and Dice"] = { base = 6, perPoint = 3 },
+            ["Expose Armor"] = { base = 6, perPoint = 2 },
         },
 
         -- Debuffs you apply to your current target. Tries to read the
@@ -113,6 +117,7 @@ addon.defaults = {
         -- the fallback estimate, once its time's up).
         targetDebuffs = {
             "Rupture",
+            "Expose Armor",
             "Garrote",
             "Kidney Shot",
             "Gouge",
@@ -129,12 +134,14 @@ addon.defaults = {
             "Sprint",
         },
 
-        -- Left-to-right slot order (not creation order) - each ability
-        -- gets a permanent position in this order, whether or not it's
-        -- currently active. Anything not listed here falls after these,
-        -- in whatever order it'd otherwise appear.
+        -- Left-to-right priority order among whichever abilities are
+        -- currently active - Slice and Dice always leads, Expose Armor
+        -- is always second when it's up, then the rest in this order.
+        -- Anything not listed here falls after these, in whatever
+        -- order it'd otherwise appear.
         displayOrder = {
             "Slice and Dice",
+            "Expose Armor",
             "Rupture",
             "Blade Flurry",
         },

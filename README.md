@@ -46,16 +46,18 @@ sessions.
 
 ## The tracker row
 
-One row, left-aligned to the energy bar. Every tracked ability has its
-own **permanent slot**, in the order set by `tracker.displayOrder`
-(Slice and Dice first, then Rupture, then Blade Flurry, then everything
-else) unless you've customized it in the Options panel, which then
-takes over — an inactive ability's icon is just hidden, leaving its
-slot empty rather than letting the others shift left to fill the gap.
-If the row would run wider than the energy bar, it wraps onto a second
-row, stacked directly above the first, rather than drifting off past
-the bar's right edge. Never more than 2 rows — past that, each row
-just widens to fit everything in, instead of adding a third.
+One row, left-aligned to the energy bar, showing only the
+currently-active abilities **packed together with no gaps** — an
+inactive one just doesn't take up space, rather than leaving an empty
+slot. They're packed in priority order set by `tracker.displayOrder`
+(Slice and Dice always leads, Expose Armor is always second when it's
+up, then Rupture, then Blade Flurry, then everything else) unless
+you've customized the order in the Options panel, which then takes
+over. If the active abilities would run wider than the energy bar, it
+wraps onto a second row, stacked directly above the first, rather than
+drifting off past the bar's right edge. Never more than 2 rows — past
+that, each row just widens to fit everything in, instead of adding a
+third.
 
 It tracks three kinds of things, configured in `Config.lua` under
 `tracker`:
@@ -67,7 +69,7 @@ tracker = {
         "Cloak of Shadows", "Adrenaline Rush", "Shadowstep", "Preparation",
     },
     targetDebuffs = {   -- things you put on your target
-        "Rupture", "Garrote", "Kidney Shot", "Gouge",
+        "Rupture", "Expose Armor", "Garrote", "Kidney Shot", "Gouge",
     },
     playerBuffs = {     -- buffs on yourself
         "Blade Flurry",
