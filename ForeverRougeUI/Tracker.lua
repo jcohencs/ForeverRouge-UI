@@ -351,11 +351,16 @@ local function GetRank(displayOrder, abilityOrder, spellName)
     return math.huge
 end
 
+-- Never more than this many rows - if fitting everything within the
+-- energy bar's width would need more, widen each row instead of
+-- adding a third one.
+local MAX_ROWS = 2
+
 -- Every tracked ability gets its own permanent slot, in rank order,
 -- whether or not it's currently active - an inactive one just leaves
 -- its slot empty rather than letting the others shift left to fill the
--- gap. Wraps onto additional rows, stacked upward above the energy
--- bar, once a row would run wider than the energy bar itself.
+-- gap. Wraps onto a second row, stacked directly above the first, once
+-- a single row would run wider than the energy bar itself.
 local function AssignFixedPositions(iconSize, spacing, displayOrder, abilityOrder, maxRowWidth)
     local ordered = {}
     for originalIndex, iconFrame in ipairs(icons) do
@@ -373,10 +378,14 @@ local function AssignFixedPositions(iconSize, spacing, displayOrder, abilityOrde
         return a.originalIndex < b.originalIndex
     end)
 
+    local totalCount = #ordered
     local step = iconSize + spacing
     local perRow = math.max(1, math.floor((maxRowWidth + spacing) / step))
-    local numRows = math.max(1, math.ceil(#ordered / perRow))
-    local colsInWidestRow = math.min(#ordered, perRow)
+    if math.ceil(totalCount / perRow) > MAX_ROWS then
+        perRow = math.ceil(totalCount / MAX_ROWS)
+    end
+    local numRows = math.max(1, math.min(MAX_ROWS, math.ceil(totalCount / perRow)))
+    local colsInWidestRow = math.min(totalCount, perRow)
 
     row:SetSize(
         math.max(colsInWidestRow * step - spacing, 1),
@@ -388,7 +397,7 @@ local function AssignFixedPositions(iconSize, spacing, displayOrder, abilityOrde
         local rowIndex = math.floor((i - 1) / perRow)
         entry.frame:ClearAllPoints()
         -- rowIndex 0 sits at the container's bottom (nearest the energy
-        -- bar); each additional row stacks upward, away from the bar.
+        -- bar); the second row stacks directly above it.
         entry.frame:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", col * step, rowIndex * step)
     end
 end

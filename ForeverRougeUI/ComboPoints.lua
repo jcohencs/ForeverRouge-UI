@@ -37,15 +37,15 @@ local function RebuildPips(maxPoints)
         outline:SetVertexColor(0, 0, 0, 1)
         pip.outline = outline
 
-        -- Fill - white when this point isn't filled yet, bright red
-        -- once it is. Drawn at full pip size, same as the outline: the
-        -- fill texture's own art is pre-sized to exactly match the
-        -- ring's inner hole, so a separate inset here would just throw
-        -- the two out of alignment with each other.
+        -- Bright red fill, transparent until this point is actually
+        -- filled. Drawn at full pip size, same as the outline: the fill
+        -- texture's own art is pre-sized to exactly match the ring's
+        -- inner hole, so a separate inset here would just throw the two
+        -- out of alignment with each other.
         local tex = pip:CreateTexture(nil, "ARTWORK")
         tex:SetAllPoints(pip)
         tex:SetTexture(FILL_TEXTURE)
-        tex:SetVertexColor(1, 1, 1, 1)
+        tex:SetVertexColor(1, 0, 0, 1)
         pip.texture = tex
 
         pips[i] = pip
@@ -64,11 +64,7 @@ local function Update()
     end
 
     for i, pip in ipairs(pips) do
-        if i <= current then
-            pip.texture:SetVertexColor(1, 0, 0, 1) -- filled: bright red
-        else
-            pip.texture:SetVertexColor(1, 1, 1, 1) -- empty: white
-        end
+        pip.texture:SetAlpha(i <= current and 1 or 0)
     end
 end
 

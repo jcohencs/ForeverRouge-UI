@@ -266,7 +266,7 @@ local function CreateOptionsPanel()
         local upButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
         upButton:SetSize(22, 20)
         upButton:SetText("^")
-        upButton:SetPoint("LEFT", checkbox, "RIGHT", 110, 0)
+        upButton:SetPoint("LEFT", checkbox, "RIGHT", 95, 0)
         upButton:SetScript("OnClick", function() MoveAbility(spellName, -1) end)
 
         local downButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
@@ -278,13 +278,22 @@ local function CreateOptionsPanel()
         abilityRows[spellName] = checkbox
     end
 
+    -- Two columns rather than one long list - the panel has limited
+    -- vertical room and a single column of every tracked ability runs
+    -- off the bottom of it.
+    local ABILITY_ROW_HEIGHT = 26
+    local ABILITY_COLUMN_WIDTH = 230
+
     RepositionAbilityRows = function()
-        local anchor = abilitiesLabel
-        for _, spellName in ipairs(GetAbilityOrder()) do
+        local order = GetAbilityOrder()
+        local rowsPerColumn = math.ceil(#order / 2)
+        for i, spellName in ipairs(order) do
             local checkbox = abilityRows[spellName]
+            local col = math.floor((i - 1) / rowsPerColumn)
+            local rowInColumn = (i - 1) % rowsPerColumn
             checkbox:ClearAllPoints()
-            checkbox:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
-            anchor = checkbox
+            checkbox:SetPoint("TOPLEFT", abilitiesLabel, "BOTTOMLEFT",
+                col * ABILITY_COLUMN_WIDTH, -4 - rowInColumn * ABILITY_ROW_HEIGHT)
         end
     end
     RepositionAbilityRows()
