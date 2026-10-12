@@ -328,30 +328,40 @@ local function UpdateIcon(iconFrame)
     end
 end
 
--- Left-to-right rank for an icon: its position in tracker.displayOrder,
--- or (if not listed there) after everything that is, keeping its
--- original relative order among the other unlisted ones.
-local function GetDisplayRank(displayOrder, spellName)
+-- Left-to-right rank for an icon. The user's own drag-free reordering
+-- (set via the Options panel's move up/down buttons, persisted in
+-- abilityOrder) always wins when it covers this ability; otherwise
+-- falls back to tracker.displayOrder, then to everything else in
+-- whatever order it'd otherwise appear.
+local function GetRank(displayOrder, abilityOrder, spellName)
+    if abilityOrder then
+        for i, name in ipairs(abilityOrder) do
+            if name == spellName then
+                return i
+            end
+        end
+    end
     if displayOrder then
         for i, name in ipairs(displayOrder) do
             if name == spellName then
-                return i
+                return i + 0.5 -- sorts after any abilityOrder entries, which take priority
             end
         end
     end
     return math.huge
 end
 
--- Every tracked ability gets its own permanent slot, left-aligned to
--- the energy bar, in rank order - whether or not it's currently active.
--- An inactive one just leaves its slot empty rather than letting the
--- others shift left to fill the gap.
-local function AssignFixedPositions(iconSize, spacing, displayOrder)
+-- Every tracked ability gets its own permanent slot, in rank order,
+-- whether or not it's currently active - an inactive one just leaves
+-- its slot empty rather than letting the others shift left to fill the
+-- gap. Wraps onto additional rows, stacked upward above the energy
+-- bar, once a row would run wider than the energy bar itself.
+local function AssignFixedPositions(iconSize, spacing, displayOrder, abilityOrder, maxRowWidth)
     local ordered = {}
     for originalIndex, iconFrame in ipairs(icons) do
         ordered[#ordered + 1] = {
             frame = iconFrame,
-            rank = GetDisplayRank(displayOrder, iconFrame.spellName),
+            rank = GetRank(displayOrder, abilityOrder, iconFrame.spellName),
             originalIndex = originalIndex,
         }
     end
@@ -363,11 +373,23 @@ local function AssignFixedPositions(iconSize, spacing, displayOrder)
         return a.originalIndex < b.originalIndex
     end)
 
-    local count = #ordered
-    row:SetSize(math.max(count * iconSize + math.max(0, count - 1) * spacing, 1), iconSize)
+    local step = iconSize + spacing
+    local perRow = math.max(1, math.floor((maxRowWidth + spacing) / step))
+    local numRows = math.max(1, math.ceil(#ordered / perRow))
+    local colsInWidestRow = math.min(#ordered, perRow)
+
+    row:SetSize(
+        math.max(colsInWidestRow * step - spacing, 1),
+        numRows * step - spacing
+    )
+
     for i, entry in ipairs(ordered) do
+        local col = (i - 1) % perRow
+        local rowIndex = math.floor((i - 1) / perRow)
         entry.frame:ClearAllPoints()
-        entry.frame:SetPoint("LEFT", row, "LEFT", (i - 1) * (iconSize + spacing), 0)
+        -- rowIndex 0 sits at the container's bottom (nearest the energy
+        -- bar); each additional row stacks upward, away from the bar.
+        entry.frame:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", col * step, rowIndex * step)
     end
 end
 
@@ -417,6 +439,17 @@ local function CreateIcon(db, kind, spellName)
     return iconFrame
 end
 
+-- Re-run slot assignment with current config - called once at init,
+-- and again from the Options panel whenever the user reorders an
+-- ability, so the change shows up immediately.
+function addon.RefreshTrackerLayout()
+    if not row then return end
+    local db = addon.GetDB().tracker
+    local fullDB = addon.GetDB()
+    local energyWidth = (fullDB.energy and fullDB.energy.width) or (db.iconSize * 6)
+    AssignFixedPositions(db.iconSize, db.spacing, db.displayOrder, fullDB.abilityOrder, energyWidth)
+end
+
 function addon.InitTracker()
     if initialized then
         UpdateAll()
@@ -445,7 +478,7 @@ function addon.InitTracker()
         CreateIcon(db, "playerBuff", name)
     end
 
-    AssignFixedPositions(db.iconSize, db.spacing, db.displayOrder)
+    addon.RefreshTrackerLayout()
 
     local watcher = CreateFrame("Frame")
     addon.SafeRegisterEvent(watcher, "SPELL_UPDATE_COOLDOWN")

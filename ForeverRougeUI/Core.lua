@@ -208,20 +208,86 @@ local function CreateOptionsPanel()
 
     local abilitiesLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     abilitiesLabel:SetPoint("TOPLEFT", resetButton, "BOTTOMLEFT", -4, -24)
-    abilitiesLabel:SetText("Tracked abilities")
+    abilitiesLabel:SetText("Tracked abilities (checkbox to show/hide, arrows to reorder)")
 
-    local abilityCheckboxes = {}
-    local anchor = abilitiesLabel
+    -- The user's own left-to-right order, customized via the move
+    -- buttons below. Falls back to the computed default order (same as
+    -- the tracker row uses) until they actually reorder something, at
+    -- which point it's seeded once and takes over for good.
+    local function GetAbilityOrder()
+        local db = addon.GetDB()
+        if not db.abilityOrder then
+            return GetTrackedAbilityNames()
+        end
+        -- Keep it in sync if Config.lua's ability lists changed since
+        -- the user last reordered - append anything missing rather
+        -- than losing track of it.
+        local present = {}
+        for _, name in ipairs(db.abilityOrder) do present[name] = true end
+        for _, name in ipairs(GetTrackedAbilityNames()) do
+            if not present[name] then
+                db.abilityOrder[#db.abilityOrder + 1] = name
+            end
+        end
+        return db.abilityOrder
+    end
+
+    local RepositionAbilityRows -- forward declaration, used by the move buttons below
+
+    local function MoveAbility(spellName, direction)
+        local db = addon.GetDB()
+        if not db.abilityOrder then
+            db.abilityOrder = GetTrackedAbilityNames()
+        end
+        local order = db.abilityOrder
+        local index
+        for i, name in ipairs(order) do
+            if name == spellName then
+                index = i
+                break
+            end
+        end
+        if not index then return end
+        local target = index + direction
+        if target < 1 or target > #order then return end
+        order[index], order[target] = order[target], order[index]
+        if addon.RefreshTrackerLayout then addon.RefreshTrackerLayout() end
+        RepositionAbilityRows()
+    end
+
+    local abilityRows = {}
     for _, spellName in ipairs(GetTrackedAbilityNames()) do
         local checkbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
-        checkbox:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
         checkbox.Text:SetText(spellName)
         checkbox:SetScript("OnClick", function(self)
             addon.GetDB().disabledAbilities[spellName] = not self:GetChecked()
         end)
-        abilityCheckboxes[spellName] = checkbox
-        anchor = checkbox
+
+        local upButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+        upButton:SetSize(22, 20)
+        upButton:SetText("^")
+        upButton:SetPoint("LEFT", checkbox, "RIGHT", 110, 0)
+        upButton:SetScript("OnClick", function() MoveAbility(spellName, -1) end)
+
+        local downButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+        downButton:SetSize(22, 20)
+        downButton:SetText("v")
+        downButton:SetPoint("LEFT", upButton, "RIGHT", 2, 0)
+        downButton:SetScript("OnClick", function() MoveAbility(spellName, 1) end)
+
+        abilityRows[spellName] = checkbox
     end
+
+    RepositionAbilityRows = function()
+        local anchor = abilitiesLabel
+        for _, spellName in ipairs(GetAbilityOrder()) do
+            local checkbox = abilityRows[spellName]
+            checkbox:ClearAllPoints()
+            checkbox:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
+            anchor = checkbox
+        end
+    end
+    RepositionAbilityRows()
 
     panel:SetScript("OnShow", function()
         local db = addon.GetDB()
@@ -229,9 +295,10 @@ local function CreateOptionsPanel()
         slider:SetValue(db.scale)
         sliderValueText:SetText(("%.2f"):format(db.scale))
         lockCheckbox:SetChecked(db.locked)
-        for spellName, checkbox in pairs(abilityCheckboxes) do
+        for spellName, checkbox in pairs(abilityRows) do
             checkbox:SetChecked(not db.disabledAbilities[spellName])
         end
+        RepositionAbilityRows()
         updatingFromDB = false
     end)
 

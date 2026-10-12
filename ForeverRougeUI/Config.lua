@@ -14,6 +14,12 @@ addon.defaults = {
     -- the tracker config below) so it's persisted across sessions.
     disabledAbilities = {},
 
+    -- Left-to-right slot order, as customized via the Options panel's
+    -- move up/down buttons. nil until the user first reorders
+    -- something, at which point it's seeded from tracker.displayOrder
+    -- and takes over completely from then on.
+    abilityOrder = nil,
+
     energy = {
         width = 210,
         height = 20,
@@ -151,7 +157,8 @@ function addon.GetDB()
 
     -- Real user preference (set via the Options panel) - only
     -- initialize it if missing, never overwrite it like the config
-    -- tables below.
+    -- tables below. abilityOrder stays nil until the user actually
+    -- reorders something (checked for explicitly wherever it's read).
     db.disabledAbilities = db.disabledAbilities or {}
 
     -- Everything else (ability lists, fallback durations, icon sizing,

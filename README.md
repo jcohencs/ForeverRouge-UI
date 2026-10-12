@@ -39,16 +39,22 @@ the middle of the screen. Drag it into place:
 Or use the in-game Options panel instead of slash commands: open the
 game menu (Esc) → Options → AddOns (or Interface → AddOns on older
 clients) → **ForeverRogue UI**, for a scale slider, a lock checkbox, a
-reset button, and a checkbox per tracked ability to turn it off
-entirely (unticking one hides it everywhere, all the time).
+reset button, and — per tracked ability — a checkbox to turn it off
+entirely plus `^`/`v` buttons to move it earlier/later in the row.
+Reordering there takes effect immediately and is remembered across
+sessions.
 
 ## The tracker row
 
 One row, left-aligned to the energy bar. Every tracked ability has its
 own **permanent slot**, in the order set by `tracker.displayOrder`
 (Slice and Dice first, then Rupture, then Blade Flurry, then everything
-else) — an inactive ability's icon is just hidden, leaving its slot
-empty rather than letting the others shift left to fill the gap.
+else) unless you've customized it in the Options panel, which then
+takes over — an inactive ability's icon is just hidden, leaving its
+slot empty rather than letting the others shift left to fill the gap.
+If the row would run wider than the energy bar, it wraps: extra
+abilities stack onto additional rows above the first, rather than
+drifting off past the bar's right edge.
 
 It tracks three kinds of things, configured in `Config.lua` under
 `tracker`:
@@ -142,10 +148,10 @@ resizing icons or the bar in `Config.lua` keeps everything aligned.
 
 ## Combo point pips
 
-Round, with a black outline ring (always visible, even on an empty
-point) and a bright red fill that's fully transparent until that point
-is actually spent. The art is shipped with the addon
-(`media/circle.tga` and `media/circle_ring.tga`) rather than relying on
-a built-in WoW texture, since neither tinting an existing icon asset
-nor `:SetMask`-based clipping rendered correctly on this server's
-client.
+Round, with a thin black outline ring (always visible) and a fill
+that's white when that point isn't spent yet and bright red once it
+is. The art is shipped with the addon (`media/circle.tga` and
+`media/circle_ring.tga`, generated to match each other's dimensions
+exactly) rather than relying on a built-in WoW texture, since neither
+tinting an existing icon asset nor `:SetMask`-based clipping rendered
+correctly on this server's client.
