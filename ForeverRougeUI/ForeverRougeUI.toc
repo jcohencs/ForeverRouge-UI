@@ -17,3 +17,4 @@ Compat.lua
 Core.lua
 Energy.lua
 Tracker.lua
+ComboPoints.lua

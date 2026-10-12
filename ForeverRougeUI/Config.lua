@@ -26,11 +26,9 @@ addon.defaults = {
         showText = true,
     },
 
-    -- Not drawn by this addon - Blizzard's own Personal Resource
-    -- Display already shows combo points above your character. Kept
-    -- only because Rupture/Slice and Dice's combo-scaled fallback
-    -- durations need to know your server's actual max combo points.
     comboPoints = {
+        pointSize = 18,
+        spacing = 4,
         maxPoints = 5, -- bumped automatically if the server reports more
     },
 

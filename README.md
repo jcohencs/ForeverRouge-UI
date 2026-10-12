@@ -1,10 +1,9 @@
 # ForeverRogue UI
 
-A lightweight Rogue HUD addon for World of Warcraft Forever: an energy
-bar and a single tracker row — left-aligned to the energy bar, Slice
-and Dice always first — for cooldowns, your bleeds/CC on your target,
-and your own buffs. Combo points aren't drawn by this addon; use
-Blizzard's own Personal Resource Display for those (see below).
+A lightweight Rogue HUD addon for World of Warcraft Forever: energy
+bar, combo point pips, and a single tracker row — left-aligned to the
+energy bar, Slice and Dice always first — for cooldowns, your
+bleeds/CC on your target, and your own buffs.
 
 ## Install
 
@@ -146,21 +145,19 @@ differently than expected.
 
 ## Layout
 
-Top to bottom: the tracker row, then the energy bar. The tracker row
-anchors off the energy bar, so resizing icons or the bar in
-`Config.lua` keeps everything aligned.
+Top to bottom: the tracker row, energy bar, combo point pips. The
+tracker row and combo points both anchor off the energy bar, so
+resizing icons or the bar in `Config.lua` keeps everything aligned.
 
-## Combo points
+## Combo point pips
 
-Shown via Blizzard's own **Personal Resource Display** above your
-character, not drawn by this addon. A few custom-art approaches were
-tried (a shipped circle texture, tinting the game's own combo point
-atlas) but this server's client only ships one combo point style
-(`UI-RogueCP-Slash-Blue`, confirmed via `/framestack`) with no
-red/round variant and a non-tintable (already-colored) base, so there
-was nothing better to build on top of. If you want the Personal
-Resource Display positioned differently (e.g. nearer this HUD), use
-**Edit Mode** (Esc → Edit Mode) to drag it — that's the supported way
-to move it, since Edit Mode re-applies its own saved position on every
-login and would fight any attempt by this addon to reposition it in
-code.
+Uses the real Blizzard combo point art rather than custom-drawn
+circles — specifically the `UI-RogueCP-Slash-Blue` atlas, which is
+exactly what this client's own Personal Resource Display uses
+(confirmed via `/framestack`, source:
+`Blizzard_UnitFrame/Mainline/RogueComboPoint.xml`). It's the only
+combo point style/color this client ships (no red or round variant, no
+tintable base, confirmed via `/frui atlases`), so pips show in
+Blizzard's native blue "slash" style. Each pip is transparent until
+that point is actually spent. If this client ever gets other atlas
+variants, swap `COMBO_POINT_ATLAS` in `ComboPoints.lua`.
