@@ -130,6 +130,14 @@ local function TrackComboPoints()
     end
 end
 
+-- /frui combo prints both live values side by side, to check the
+-- combo-scaled fallback (Rupture) is seeing what you actually spent.
+function addon.DebugComboPoints()
+    local current = addon.GetComboPoints()
+    print(("ForeverRogue UI: live combo points=%s, last tracked nonzero=%s"):format(
+        tostring(current), tostring(lastComboPoints)))
+end
+
 -- duration = base + perPoint * comboPointsSpent, for abilities whose
 -- fallback timer needs to scale with combo points (see
 -- tracker.comboScaledDurations in Config.lua). Falls back to the flat

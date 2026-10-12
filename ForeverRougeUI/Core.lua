@@ -107,7 +107,9 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
         if addon.SetAuraLogging then addon.SetAuraLogging(true) end
     elseif msg == "auralog off" then
         if addon.SetAuraLogging then addon.SetAuraLogging(false) end
+    elseif msg == "combo" then
+        if addon.DebugComboPoints then addon.DebugComboPoints() end
     else
-        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env, /frui auras <unit> <filter>, /frui auralog on|off")
+        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env, /frui auras <unit> <filter>, /frui auralog on|off, /frui combo")
     end
 end
