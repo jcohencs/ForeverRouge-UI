@@ -15,7 +15,6 @@
 Config.lua
 Compat.lua
 Core.lua
-Cooldowns.lua
 Energy.lua
+Tracker.lua
 ComboPoints.lua
-Debuffs.lua

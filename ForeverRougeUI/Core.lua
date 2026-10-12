@@ -56,11 +56,11 @@ eventFrame:SetScript("OnEvent", function(_, event)
     end
     frame:Show()
 
-    -- Order matters: each row anchors below the previous one.
-    if addon.InitCooldowns then addon.InitCooldowns() end
+    -- Order matters: the tracker row anchors above the energy bar, and
+    -- combo points anchor below it.
     if addon.InitEnergy then addon.InitEnergy() end
+    if addon.InitTracker then addon.InitTracker() end
     if addon.InitComboPoints then addon.InitComboPoints() end
-    if addon.InitDebuffs then addon.InitDebuffs() end
 end)
 
 SLASH_FOREVERROGUEUI1 = "/frui"

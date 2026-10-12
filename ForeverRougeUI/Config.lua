@@ -21,27 +21,17 @@ addon.defaults = {
         maxPoints = 5, -- bumped automatically if the server reports more
     },
 
-    debuffs = {
-        iconSize = 30,
+    -- One row, auto-centered directly above the energy bar, that shows
+    -- an icon+countdown only while each thing below is actually active.
+    tracker = {
+        iconSize = 32,
         spacing = 6,
-        -- Your own bleeds/DoTs to watch on the current target. Shows
-        -- only while the debuff is actually up, with remaining time.
-        tracked = {
-            "Rupture",
-            "Garrote",
-        },
-    },
 
-    cooldowns = {
-        iconSize = 36,
-        spacing = 6,
-        growDirection = "RIGHT", -- RIGHT, LEFT, UP, DOWN
-        -- Tracked by spell name so this works regardless of spell ID
-        -- differences between retail/classic/private-server cores.
-        -- Add/remove/reorder freely.
-        abilities = {
+        -- True ability reuse cooldowns. Tracked by spell name so this
+        -- works regardless of spell ID differences between retail/
+        -- classic/private-server cores. Add/remove/reorder freely.
+        cooldowns = {
             "Kick",
-            "Kidney Shot",
             "Blind",
             "Evasion",
             "Sprint",
@@ -52,16 +42,43 @@ addon.defaults = {
             "Preparation",
         },
 
-        -- Blizzard seals the real cooldown for interrupt-type abilities
-        -- (Kick here) so addons can't read it - an anti-sniping measure
-        -- for PvP. For those abilities only, give an approximate
-        -- cooldown here so a timer can still be shown; it's started from
-        -- when you cast it and won't auto-adjust if a talent changes the
-        -- real cooldown, so its countdown text gets a trailing "*" as a
-        -- reminder it's an estimate. Abilities not listed here don't
-        -- need this - they're read live and are exact.
+        -- Blizzard seals the real cooldown for some abilities (at least
+        -- interrupts and several CC effects on this server) so addons
+        -- can't read it - an anti-sniping measure for PvP. For any
+        -- ability above that turns out sealed, this approximate
+        -- cooldown is used instead: the timer starts from when you cast
+        -- it rather than reading the real value, so it won't auto-
+        -- adjust if a talent changes the real cooldown, and its
+        -- countdown text gets a trailing "*" as a reminder it's an
+        -- estimate. Abilities that aren't sealed just ignore this and
+        -- read live (exact, no "*"). These are rough baseline values -
+        -- adjust any that don't match what you actually see in-game.
         fallbackDurations = {
             Kick = 15,
+            Blind = 120,
+            Evasion = 120,
+            Sprint = 60,
+            Vanish = 120,
+            ["Cloak of Shadows"] = 120,
+            ["Adrenaline Rush"] = 180,
+            Shadowstep = 20,
+            Preparation = 300,
+        },
+
+        -- Debuffs you apply to your current target - tracked by the
+        -- aura's real remaining duration (these aren't sealed, so
+        -- they're exact), shown only while actually up and gone the
+        -- instant it falls off or you switch target.
+        targetDebuffs = {
+            "Rupture",
+            "Garrote",
+            "Kidney Shot",
+            "Gouge",
+        },
+
+        -- Buffs on yourself - same idea, read from your own auras.
+        playerBuffs = {
+            "Blade Flurry",
         },
     },
 }

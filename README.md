@@ -1,8 +1,9 @@
 # ForeverRogue UI
 
 A lightweight Rogue HUD addon for World of Warcraft Forever: energy bar,
-combo point pips, an on-cooldown ability tracker, and a bleed/DoT tracker
-for your target.
+combo point pips, and a single auto-centering tracker row above the
+energy bar for cooldowns, your bleeds/CC on your target, and your own
+buffs.
 
 ## Install
 
@@ -35,83 +36,80 @@ the middle of the screen. Drag it into place:
 - `/frui reset` — reset position to default
 - `/frui scale 1.2` — resize the whole HUD
 
-## How the cooldown row behaves
+## The tracker row
 
-Each ability icon is **hidden until you use it**. The moment it goes on
-cooldown it appears with a countdown; in the last 5 seconds before it's
-ready again it gets a pulsing glow as a "coming up" alert; then it
-disappears once it's ready. The global cooldown itself (the ~1.5s flash
-you get from using any ability) is filtered out so using an ability
-doesn't flash every icon in the row.
+One row, anchored directly above the energy bar, always auto-centered
+over it. Every icon in it is **hidden until it's actually active** and
+only the currently-active ones are shown, packed together and
+re-centered as things appear/disappear — so using one ability doesn't
+leave a gap where an inactive one "would" be.
 
-If an ability still doesn't show up at all, run `/frui debug <name>`
-in-game, e.g. `/frui debug Blade Flurry` — it prints what the lookup
-found (or didn't) so the cause can be pinned down. The most common
-reasons: it's not currently in your spellbook (wrong spec, or on this
-server's rune-engraving system the rune isn't engraved yet), or the name
-in `Config.lua` doesn't exactly match the one in your spellbook.
-
-### Interrupts (Kick) are an estimate, on purpose
-
-Blizzard deliberately seals the real cooldown numbers for interrupt-type
-abilities from addons entirely (an anti-sniping measure for PvP) - not
-even passing the value through to another API is allowed, so there's no
-way to read Kick's actual cooldown from here. For abilities like that
-(configured under `cooldowns.fallbackDurations` in `Config.lua`, Kick by
-default), the addon instead times it itself: the moment you cast it, it
-starts its own stopwatch using the approximate cooldown you've set there
-and counts down normally (glow included). Its countdown text gets a
-trailing `*` as a reminder it's an estimate - if a talent changes Kick's
-real cooldown, update the number in `fallbackDurations` to match.
-Sprint, Vanish, and everything else aren't sealed and track exactly, with
-no `*`.
-
-## Configuring tracked abilities
-
-Edit the `abilities` list in `Config.lua` — it's just spell names, so you
-can add, remove, or reorder cooldowns without touching any other file:
+It tracks three kinds of things, configured in `Config.lua` under
+`tracker`:
 
 ```lua
-abilities = {
-    "Kick",
-    "Kidney Shot",
-    "Blind",
-    "Evasion",
-    "Sprint",
-    "Vanish",
-    "Cloak of Shadows",
-    "Adrenaline Rush",
-    "Shadowstep",
-    "Preparation",
-},
-```
-
-Remove any ability your server/spec doesn't have, or add others (e.g.
-"Blade Flurry", "Riposte", "Ambush") the same way — the exact spelling
-has to match your spellbook entry.
-
-## Bleed/DoT tracker (Rupture, Garrote, ...)
-
-This is separate from the cooldown row, because a bleed is a debuff on
-your *target*, not a cooldown on your character. It tracks the real
-remaining duration of the debuff and disappears the instant it falls off
-or you switch target. Configure it under `debuffs.tracked` in
-`Config.lua`:
-
-```lua
-debuffs = {
-    tracked = {
-        "Rupture",
-        "Garrote",
+tracker = {
+    cooldowns = {       -- true ability reuse cooldowns
+        "Kick", "Blind", "Evasion", "Sprint", "Vanish",
+        "Cloak of Shadows", "Adrenaline Rush", "Shadowstep", "Preparation",
+    },
+    targetDebuffs = {   -- things you put on your target
+        "Rupture", "Garrote", "Kidney Shot", "Gouge",
+    },
+    playerBuffs = {     -- buffs on yourself
+        "Blade Flurry",
     },
 },
 ```
 
-Add any other bleed/poison you want watched the same way (e.g. "Deadly
-Poison", "Crippling Poison").
+- **cooldowns**: shows the moment you use it, counts down, pulses a
+  glow in the last 5 seconds, disappears once ready. The global
+  cooldown itself (~1.5s from using *any* ability) is filtered out so
+  one ability use doesn't flash the whole row.
+- **targetDebuffs**: for stuff you apply to your current target
+  (bleeds, Kidney Shot's stun, Gouge). Reads the aura's *real*
+  remaining duration, so it's exact — shows while it's up, disappears
+  the instant it falls off or you switch target.
+- **playerBuffs**: same idea, for buffs on yourself (Blade Flurry).
+
+Move an ability between these three lists if it's being tracked the
+wrong way — e.g. if something is really an effect you apply rather than
+a cooldown you wait out, it belongs in `targetDebuffs`/`playerBuffs`,
+not `cooldowns`. The exact spelling has to match the name in your
+spellbook/aura.
+
+If an ability still doesn't show up at all, run `/frui debug <name>`
+in-game, e.g. `/frui debug Blade Flurry` — it prints what the cooldown
+lookup found (or didn't). The most common reasons: it's not currently
+in your spellbook (wrong spec, or on this server's rune-engraving
+system the rune isn't engraved yet), or the name in `Config.lua`
+doesn't exactly match the one in your spellbook/aura.
+
+### Some cooldowns are an estimate, on purpose
+
+Blizzard deliberately seals the real cooldown numbers for some
+abilities from addons entirely — interrupts, and apparently several CC
+effects too on this server (an anti-sniping measure for PvP). Not even
+passing the sealed value through to another API is allowed, so there's
+no way to read the actual cooldown for those from here at all.
+
+For any ability in `tracker.cooldowns` that turns out sealed, the addon
+instead times it itself using `tracker.fallbackDurations`: the moment
+you cast it, it starts its own stopwatch using the approximate cooldown
+you've set there and counts down normally (glow included). Its
+countdown text gets a trailing `*` as a reminder it's an estimate —
+if the real cooldown differs (talents, gear, etc.), adjust the number
+to match what you see in-game. Fallback durations are preset for every
+ability in the default `cooldowns` list, but they're only ever used if
+that ability actually turns out to be sealed — anything that reads live
+fine just ignores its fallback number and shows the exact value (no
+`*`). If you ever see the chat message "`<ability>`'s cooldown is
+sealed... no fallback duration is set", that ability is sealed and
+needs an entry added to `fallbackDurations`.
 
 ## Layout
 
-Top to bottom: cooldown icons, energy bar, combo point pips, bleed/DoT
-tracker. Each row anchors to the one above it, so resizing icons or the
-bar in `Config.lua` keeps everything aligned.
+Top to bottom: the tracker row, energy bar, combo point pips. The
+tracker row and combo points both anchor off the energy bar, so
+resizing icons or the bar in `Config.lua` keeps everything aligned and
+centered.

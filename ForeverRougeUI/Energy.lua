@@ -24,11 +24,7 @@ function addon.InitEnergy()
     bar = CreateFrame("StatusBar", "ForeverRougeUIEnergyBar", addon.frame)
     addon.energyBar = bar
     bar:SetSize(db.width, db.height)
-    if addon.cooldownRow then
-        bar:SetPoint("TOP", addon.cooldownRow, "BOTTOM", 0, -8)
-    else
-        bar:SetPoint("TOP", addon.frame, "TOP", 0, 0)
-    end
+    bar:SetPoint("TOP", addon.frame, "TOP", 0, -40)
     bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
     bar:SetStatusBarColor(1, 0.85, 0.1)
     bar:SetMinMaxValues(0, 100)
