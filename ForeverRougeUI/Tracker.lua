@@ -23,8 +23,13 @@ local GCD_THRESHOLD = 1.6
 -- removed). Since the row polls every 0.1s, trusting a single miss
 -- would hide-then-reshow icons faster than the eye can see, looking
 -- like "it just doesn't work." So a miss only hides the icon once this
--- many seconds have passed with zero successful reads.
-local AURA_FLAKE_GRACE = 1.0
+-- many seconds have passed with zero successful reads. Blade Flurry
+-- showed the flakiness can run longer than a second at a stretch, so
+-- this plus the cast-fallback timer (see CheckCastFallback) together
+-- cover it: this bridges short gaps, the fallback timer covers the
+-- rest if the live read doesn't come back before the buff should
+-- actually be ending.
+local AURA_FLAKE_GRACE = 2.5
 
 local function FormatTime(remaining)
     if remaining >= 60 then
@@ -364,6 +369,7 @@ local function CreateIcon(db, kind, spellName)
     iconFrame.cooldown:SetDrawEdge(false) -- no bright rotating line during the countdown
     iconFrame.cooldown:SetDrawBling(false) -- no bright flash when it completes
     iconFrame.cooldown:SetHideCountdownNumbers(true)
+    iconFrame.cooldown:SetSwipeColor(0, 0, 0, 0.45) -- lighter swipe so the icon/text underneath stays readable
 
     iconFrame.text = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     iconFrame.text:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)

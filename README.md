@@ -55,7 +55,7 @@ It tracks three kinds of things, configured in `Config.lua` under
 ```lua
 tracker = {
     cooldowns = {       -- true ability reuse cooldowns
-        "Kick", "Blind", "Evasion", "Sprint", "Vanish",
+        "Kick", "Blind", "Vanish",
         "Cloak of Shadows", "Adrenaline Rush", "Shadowstep", "Preparation",
     },
     targetDebuffs = {   -- things you put on your target
@@ -64,14 +64,16 @@ tracker = {
     playerBuffs = {     -- buffs on yourself
         "Blade Flurry",
         "Slice and Dice",
+        "Evasion",
+        "Sprint",
     },
 },
 ```
 
-- **cooldowns**: shows the moment you use it, counts down, pulses a
-  glow in the last 5 seconds, disappears once ready. The global
-  cooldown itself (~1.5s from using *any* ability) is filtered out so
-  one ability use doesn't flash the whole row.
+- **cooldowns**: shows the moment you use it, counts down, disappears
+  once ready. The global cooldown itself (~1.5s from using *any*
+  ability) is filtered out so one ability use doesn't flash the whole
+  row.
 - **targetDebuffs**: for stuff you apply to your current target
   (bleeds, Kidney Shot's stun, Gouge). Tries to read the aura's *real*
   remaining duration first (exact, no `*`) — but this server appears to
@@ -80,8 +82,9 @@ tracker = {
   back empty it falls back to a self-timed estimate from
   `fallbackDurations` instead, same idea as the sealed-cooldown
   fallback below.
-- **playerBuffs**: same idea, for buffs on yourself (Blade Flurry) —
-  these have read live fine so far.
+- **playerBuffs**: same idea, for buffs on yourself. Evasion and Sprint
+  live here rather than in `cooldowns`, so you see their active buff
+  duration instead of their (much longer) full reuse cooldown.
 
 Move an ability between these three lists if it's being tracked the
 wrong way — e.g. if something is really an effect you apply rather than

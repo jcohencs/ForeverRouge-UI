@@ -40,7 +40,11 @@ local function RebuildPips(maxPoints)
         tex:SetPoint("TOPLEFT", pip, "TOPLEFT", 2, -2)
         tex:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", -2, 2)
         tex:SetTexture(ROUND_ICON)
-        tex:SetVertexColor(1, 0.08, 0.08, 1) -- brighter, more saturated red
+        -- Additive blending so the red isn't capped by how dark/gray
+        -- the base icon art actually is - a vertex-colored tint alone
+        -- can never look brighter than its base texture.
+        tex:SetBlendMode("ADD")
+        tex:SetVertexColor(1, 0.15, 0.15, 1)
         pip.texture = tex
 
         pips[i] = pip

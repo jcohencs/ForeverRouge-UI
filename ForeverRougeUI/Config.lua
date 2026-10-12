@@ -33,7 +33,6 @@ addon.defaults = {
         cooldowns = {
             "Kick",
             "Blind",
-            "Evasion",
             "Vanish",
             "Cloak of Shadows",
             "Adrenaline Rush",
@@ -58,8 +57,6 @@ addon.defaults = {
         fallbackDurations = {
             Kick = 15,
             Blind = 120,
-            Evasion = 120,
-            Sprint = 120,
             Vanish = 120,
             ["Cloak of Shadows"] = 120,
             ["Adrenaline Rush"] = 180,
@@ -77,6 +74,13 @@ addon.defaults = {
             -- priority) - this flat value is never actually used, just
             -- a safety net.
             ["Slice and Dice"] = 12,
+            -- These read live fine, but the live read can flake out for
+            -- longer than AURA_FLAKE_GRACE tolerates - this is the
+            -- backup that kicks in rather than the icon just vanishing
+            -- mid-buff. Adjust to match the real buff duration you see.
+            ["Blade Flurry"] = 15,
+            Evasion = 15,
+            Sprint = 15,
         },
 
         -- For abilities whose fallback duration depends on combo points
@@ -106,9 +110,14 @@ addon.defaults = {
         },
 
         -- Buffs on yourself - same idea, read from your own auras.
+        -- Evasion/Sprint live here (not in cooldowns above) because you
+        -- want to see their active buff duration, not their full reuse
+        -- cooldown.
         playerBuffs = {
             "Blade Flurry",
             "Slice and Dice",
+            "Evasion",
+            "Sprint",
         },
 
         -- Left-to-right order for whichever icons are currently active
