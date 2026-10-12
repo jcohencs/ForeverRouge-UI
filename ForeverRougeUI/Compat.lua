@@ -220,6 +220,39 @@ function addon.GetUnitAuraByIndex(unit, index, filter)
     return nil
 end
 
+-- Debug helper: /frui atlases probes for sibling variants of the
+-- native Personal Resource Display's combo point atlas (discovered via
+-- /framestack: UI-RogueCP-Slash-Blue on this client's
+-- Blizzard_UnitFrame/Mainline/RogueComboPoint.xml) across likely style
+-- and color names, so we can find a red and/or round one that actually
+-- exists instead of guessing blind.
+function addon.DebugComboAtlases()
+    if not (C_Texture and C_Texture.GetAtlasInfo) then
+        print("ForeverRogue UI: C_Texture.GetAtlasInfo not available on this client.")
+        return
+    end
+
+    local styles = { "Slash", "Dot", "Circle", "Square", "Diamond", "Star" }
+    local colors = { "Blue", "Red", "Green", "Yellow", "Orange", "Purple", "White", "Gray" }
+    local suffixes = { "", "-BG", "-FB", "FBCharged", "FBUncharged" }
+
+    print("ForeverRogue UI: probing UI-RogueCP-<style>-<color><suffix> atlases...")
+    local found = 0
+    for _, style in ipairs(styles) do
+        for _, color in ipairs(colors) do
+            for _, suffix in ipairs(suffixes) do
+                local name = ("UI-RogueCP-%s-%s%s"):format(style, color, suffix)
+                local ok, info = pcall(C_Texture.GetAtlasInfo, name)
+                if ok and info then
+                    found = found + 1
+                    print("  FOUND: " .. name)
+                end
+            end
+        end
+    end
+    print(("ForeverRogue UI: done, %d match(es)."):format(found))
+end
+
 -- Debug helper: /frui auras <unit> <filter> dumps every aura currently
 -- found on a unit (default target/HARMFUL), to see why a tracked debuff
 -- or buff isn't matching - wrong name, wrong source, or not found at
