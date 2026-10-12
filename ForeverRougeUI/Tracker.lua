@@ -245,6 +245,8 @@ local function UpdateAuraIcon(iconFrame)
             end
 
             if duration and duration > 0 and expirationTime then
+                iconFrame.lastKnownExpiration = expirationTime
+                iconFrame.lastKnownDuration = duration
                 local remaining = expirationTime - GetTime()
                 if remaining > 0 then
                     iconFrame.cooldown:SetCooldown(expirationTime - duration, duration)
@@ -252,6 +254,8 @@ local function UpdateAuraIcon(iconFrame)
                     iconFrame.text:SetText(FormatTime(remaining))
                     return
                 end
+            else
+                iconFrame.lastKnownExpiration = nil
             end
 
             -- No duration info (permanent-style effect) - just show the icon.
@@ -262,13 +266,31 @@ local function UpdateAuraIcon(iconFrame)
 
         -- Live read found nothing. Could be genuinely gone, or this
         -- server's flaky aura API missing a read it'd have gotten right
-        -- a tick later - don't trust a miss until grace runs out.
+        -- a tick later - don't trust a miss until grace runs out. Keep
+        -- counting down for real using the last known expiration time
+        -- instead of freezing the display, so a run of misses doesn't
+        -- leave the countdown visibly lagging behind the real timer.
         if iconFrame.lastSeenTime and (GetTime() - iconFrame.lastSeenTime) < AURA_FLAKE_GRACE then
-            return -- leave the icon exactly as it was last tick
+            if iconFrame.lastKnownExpiration then
+                local remaining = iconFrame.lastKnownExpiration - GetTime()
+                if remaining > 0 then
+                    iconFrame:Show()
+                    iconFrame.cooldown:SetCooldown(iconFrame.lastKnownExpiration - iconFrame.lastKnownDuration, iconFrame.lastKnownDuration)
+                    iconFrame.cooldown:Show()
+                    iconFrame.text:SetText(FormatTime(remaining))
+                    return
+                end
+                -- Cached expiration has actually passed - fall through
+                -- to the normal hide/fallback handling below instead of
+                -- holding it visible on stale data.
+            else
+                return -- nothing to extrapolate from, just hold as-is
+            end
         end
     end
 
     iconFrame.lastSeenTime = nil
+    iconFrame.lastKnownExpiration = nil
 
     -- No live data available at all (this server may hide enemy debuff
     -- durations from addons the same way it seals some cooldowns) - use
@@ -288,10 +310,12 @@ end
 
 local function OnTargetChanged()
     -- A new target starts with a clean slate - don't let a grace
-    -- window armed for the previous target linger onto this one.
+    -- window (or the expiration it was extrapolating from) armed for
+    -- the previous target linger onto this one.
     for _, iconFrame in ipairs(icons) do
         if iconFrame.kind == "targetDebuff" then
             iconFrame.lastSeenTime = nil
+            iconFrame.lastKnownExpiration = nil
         end
     end
 end
