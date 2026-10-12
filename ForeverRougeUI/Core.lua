@@ -114,6 +114,43 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
     end
 end
 
+-- All tracked ability names, deduplicated, ordered the same way the
+-- tracker row is (tracker.displayOrder first, then everything else in
+-- the order it's otherwise listed) - so the checkbox list below reads
+-- in the same order the abilities actually appear on screen.
+local function GetTrackedAbilityNames()
+    local db = addon.GetDB().tracker
+    local names, seen = {}, {}
+    for _, list in ipairs({ db.cooldowns, db.targetDebuffs, db.playerBuffs }) do
+        for _, name in ipairs(list) do
+            if not seen[name] then
+                seen[name] = true
+                names[#names + 1] = name
+            end
+        end
+    end
+
+    local originalIndex = {}
+    for i, name in ipairs(names) do originalIndex[name] = i end
+
+    local function rank(name)
+        if db.displayOrder then
+            for i, n in ipairs(db.displayOrder) do
+                if n == name then return i end
+            end
+        end
+        return math.huge
+    end
+
+    table.sort(names, function(a, b)
+        local ra, rb = rank(a), rank(b)
+        if ra ~= rb then return ra < rb end
+        return originalIndex[a] < originalIndex[b]
+    end)
+
+    return names
+end
+
 -- In-game Options panel (Game Menu / Esc > Options > AddOns, or the
 -- Interface/AddOns settings screen depending on client version) so the
 -- scale can be adjusted without typing slash commands.
@@ -169,12 +206,32 @@ local function CreateOptionsPanel()
         ApplyPosition()
     end)
 
+    local abilitiesLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    abilitiesLabel:SetPoint("TOPLEFT", resetButton, "BOTTOMLEFT", -4, -24)
+    abilitiesLabel:SetText("Tracked abilities")
+
+    local abilityCheckboxes = {}
+    local anchor = abilitiesLabel
+    for _, spellName in ipairs(GetTrackedAbilityNames()) do
+        local checkbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
+        checkbox:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
+        checkbox.Text:SetText(spellName)
+        checkbox:SetScript("OnClick", function(self)
+            addon.GetDB().disabledAbilities[spellName] = not self:GetChecked()
+        end)
+        abilityCheckboxes[spellName] = checkbox
+        anchor = checkbox
+    end
+
     panel:SetScript("OnShow", function()
         local db = addon.GetDB()
         updatingFromDB = true
         slider:SetValue(db.scale)
         sliderValueText:SetText(("%.2f"):format(db.scale))
         lockCheckbox:SetChecked(db.locked)
+        for spellName, checkbox in pairs(abilityCheckboxes) do
+            checkbox:SetChecked(not db.disabledAbilities[spellName])
+        end
         updatingFromDB = false
     end)
 

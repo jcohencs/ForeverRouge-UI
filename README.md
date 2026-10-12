@@ -1,9 +1,9 @@
 # ForeverRogue UI
 
 A lightweight Rogue HUD addon for World of Warcraft Forever: energy bar,
-combo point pips, and a single auto-centering tracker row above the
-energy bar for cooldowns, your bleeds/CC on your target, and your own
-buffs.
+combo point pips, and a single tracker row — left-aligned to the energy
+bar, Slice and Dice always first — for cooldowns, your bleeds/CC on
+your target, and your own buffs.
 
 ## Install
 
@@ -38,16 +38,17 @@ the middle of the screen. Drag it into place:
 
 Or use the in-game Options panel instead of slash commands: open the
 game menu (Esc) → Options → AddOns (or Interface → AddOns on older
-clients) → **ForeverRogue UI**, for a scale slider, a lock checkbox, and
-a reset button.
+clients) → **ForeverRogue UI**, for a scale slider, a lock checkbox, a
+reset button, and a checkbox per tracked ability to turn it off
+entirely (unticking one hides it everywhere, all the time).
 
 ## The tracker row
 
-One row, anchored directly above the energy bar, always auto-centered
-over it. Every icon in it is **hidden until it's actually active** and
-only the currently-active ones are shown, packed together and
-re-centered as things appear/disappear — so using one ability doesn't
-leave a gap where an inactive one "would" be.
+One row, left-aligned to the energy bar. Every tracked ability has its
+own **permanent slot**, in the order set by `tracker.displayOrder`
+(Slice and Dice first, then Rupture, then Blade Flurry, then everything
+else) — an inactive ability's icon is just hidden, leaving its slot
+empty rather than letting the others shift left to fill the gap.
 
 It tracks three kinds of things, configured in `Config.lua` under
 `tracker`:
@@ -137,5 +138,14 @@ differently than expected.
 
 Top to bottom: the tracker row, energy bar, combo point pips. The
 tracker row and combo points both anchor off the energy bar, so
-resizing icons or the bar in `Config.lua` keeps everything aligned and
-centered.
+resizing icons or the bar in `Config.lua` keeps everything aligned.
+
+## Combo point pips
+
+Round, with a black outline ring (always visible, even on an empty
+point) and a bright red fill that's fully transparent until that point
+is actually spent. The art is shipped with the addon
+(`media/circle.tga` and `media/circle_ring.tga`) rather than relying on
+a built-in WoW texture, since neither tinting an existing icon asset
+nor `:SetMask`-based clipping rendered correctly on this server's
+client.

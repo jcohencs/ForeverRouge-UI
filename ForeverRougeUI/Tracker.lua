@@ -1,9 +1,10 @@
 ForeverRougeUI = ForeverRougeUI or {}
 local addon = ForeverRougeUI
 
--- A single row that tracks three kinds of things, all rendered the same
--- way (icon + countdown), auto-centered above the energy bar, showing
--- only while actually active:
+-- A single row that tracks three kinds of things, each in its own
+-- permanent slot left-aligned to the energy bar (ordered per
+-- tracker.displayOrder, Slice and Dice first), showing only while
+-- actually active - an inactive one just leaves its slot empty:
 --   "cooldown"     - a true ability reuse cooldown (Kick, Sprint, ...)
 --   "targetDebuff" - a debuff you applied to your target (Rupture,
 --                    Kidney Shot's stun, Gouge) - tracked by the aura's
@@ -297,7 +298,7 @@ local function UpdateAuraIcon(iconFrame)
 end
 
 -- ---------------------------------------------------------------------
--- Shared update + auto-centering layout
+-- Shared update + fixed-slot layout
 -- ---------------------------------------------------------------------
 
 local function OnTargetChanged()
@@ -313,6 +314,13 @@ local function OnTargetChanged()
 end
 
 local function UpdateIcon(iconFrame)
+    if addon.GetDB().disabledAbilities[iconFrame.spellName] then
+        -- Turned off via the Options panel - always hidden, in its own
+        -- reserved slot, regardless of its real state.
+        HideIcon(iconFrame)
+        return
+    end
+
     if iconFrame.kind == "cooldown" then
         UpdateCooldownIcon(iconFrame)
     else
@@ -320,9 +328,9 @@ local function UpdateIcon(iconFrame)
     end
 end
 
--- Left-to-right rank for a currently-visible icon: its position in
--- tracker.displayOrder, or (if not listed there) after everything that
--- is, keeping its original relative order among the other unlisted ones.
+-- Left-to-right rank for an icon: its position in tracker.displayOrder,
+-- or (if not listed there) after everything that is, keeping its
+-- original relative order among the other unlisted ones.
 local function GetDisplayRank(displayOrder, spellName)
     if displayOrder then
         for i, name in ipairs(displayOrder) do
@@ -334,28 +342,30 @@ local function GetDisplayRank(displayOrder, spellName)
     return math.huge
 end
 
-local function ReflowVisibleIcons(iconSize, spacing, displayOrder)
-    local visible = {}
+-- Every tracked ability gets its own permanent slot, left-aligned to
+-- the energy bar, in rank order - whether or not it's currently active.
+-- An inactive one just leaves its slot empty rather than letting the
+-- others shift left to fill the gap.
+local function AssignFixedPositions(iconSize, spacing, displayOrder)
+    local ordered = {}
     for originalIndex, iconFrame in ipairs(icons) do
-        if iconFrame:IsShown() then
-            visible[#visible + 1] = {
-                frame = iconFrame,
-                rank = GetDisplayRank(displayOrder, iconFrame.spellName),
-                originalIndex = originalIndex,
-            }
-        end
+        ordered[#ordered + 1] = {
+            frame = iconFrame,
+            rank = GetDisplayRank(displayOrder, iconFrame.spellName),
+            originalIndex = originalIndex,
+        }
     end
 
-    table.sort(visible, function(a, b)
+    table.sort(ordered, function(a, b)
         if a.rank ~= b.rank then
             return a.rank < b.rank
         end
         return a.originalIndex < b.originalIndex
     end)
 
-    local count = #visible
+    local count = #ordered
     row:SetSize(math.max(count * iconSize + math.max(0, count - 1) * spacing, 1), iconSize)
-    for i, entry in ipairs(visible) do
+    for i, entry in ipairs(ordered) do
         entry.frame:ClearAllPoints()
         entry.frame:SetPoint("LEFT", row, "LEFT", (i - 1) * (iconSize + spacing), 0)
     end
@@ -365,8 +375,6 @@ local function UpdateAll()
     for _, iconFrame in ipairs(icons) do
         UpdateIcon(iconFrame)
     end
-    local db = addon.GetDB().tracker
-    ReflowVisibleIcons(db.iconSize, db.spacing, db.displayOrder)
 end
 
 local function CreateIcon(db, kind, spellName)
@@ -422,9 +430,9 @@ function addon.InitTracker()
     addon.trackerRow = row
     row:SetSize(1, db.iconSize)
     if addon.energyBar then
-        row:SetPoint("BOTTOM", addon.energyBar, "TOP", 0, 8)
+        row:SetPoint("BOTTOMLEFT", addon.energyBar, "TOPLEFT", 0, 8)
     else
-        row:SetPoint("BOTTOM", addon.frame, "TOP", 0, -8)
+        row:SetPoint("LEFT", addon.frame, "TOPLEFT", 0, -8)
     end
 
     for _, name in ipairs(db.cooldowns) do
@@ -436,6 +444,8 @@ function addon.InitTracker()
     for _, name in ipairs(db.playerBuffs) do
         CreateIcon(db, "playerBuff", name)
     end
+
+    AssignFixedPositions(db.iconSize, db.spacing, db.displayOrder)
 
     local watcher = CreateFrame("Frame")
     addon.SafeRegisterEvent(watcher, "SPELL_UPDATE_COOLDOWN")

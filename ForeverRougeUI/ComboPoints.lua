@@ -14,34 +14,35 @@ local function RebuildPips(maxPoints)
     local totalWidth = maxPoints * db.pointSize + math.max(0, maxPoints - 1) * db.spacing
     row:SetSize(totalWidth, db.pointSize)
 
-    -- A real round texture we ship with the addon (media/circle.tga) -
-    -- :SetMask doesn't work reliably on this server's client, so a
-    -- pre-made circular image, tinted via vertex color, is the only
-    -- approach that's actually gotten a circle to render. It's pure
-    -- white where opaque, so tinting gives the exact color back with
-    -- no brightness cap from the base art.
-    local CIRCLE_TEXTURE = "Interface\\AddOns\\ForeverRougeUI\\media\\circle"
+    -- Real textures shipped with the addon - :SetMask doesn't work
+    -- reliably on this server's client, so pre-made art, tinted via
+    -- vertex color, is the only approach that's actually rendered as a
+    -- circle. Both are pure white where opaque, so tinting gives back
+    -- the exact color with no brightness cap from the base art.
+    local RING_TEXTURE = "Interface\\AddOns\\ForeverRougeUI\\media\\circle_ring"
+    local FILL_TEXTURE = "Interface\\AddOns\\ForeverRougeUI\\media\\circle"
 
     for i = 1, maxPoints do
         local pip = CreateFrame("Frame", nil, row)
         pip:SetSize(db.pointSize, db.pointSize)
         pip:SetPoint("LEFT", row, "LEFT", (i - 1) * (db.pointSize + db.spacing), 0)
 
-        -- Black outline ring, always visible - drawn full-size, behind
-        -- the fill, so it still shows as an empty circle before this
-        -- point is filled.
+        -- Black ring outline, always visible. This is a true ring (a
+        -- ring shape with a transparent hole, not a filled disc), so
+        -- the center stays genuinely transparent rather than reading
+        -- as a solid black circle whenever the fill below is hidden.
         local outline = pip:CreateTexture(nil, "BORDER")
         outline:SetAllPoints(pip)
-        outline:SetTexture(CIRCLE_TEXTURE)
+        outline:SetTexture(RING_TEXTURE)
         outline:SetVertexColor(0, 0, 0, 1)
         pip.outline = outline
 
-        -- Colored fill, inset slightly so the outline reads as a ring,
-        -- hidden (alpha 0) until this point is actually filled.
+        -- Colored fill, inset within the ring's hole, hidden (alpha 0)
+        -- until this point is actually filled.
         local tex = pip:CreateTexture(nil, "ARTWORK")
-        tex:SetPoint("TOPLEFT", pip, "TOPLEFT", 2, -2)
-        tex:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", -2, 2)
-        tex:SetTexture(CIRCLE_TEXTURE)
+        tex:SetPoint("TOPLEFT", pip, "TOPLEFT", 4, -4)
+        tex:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", -4, 4)
+        tex:SetTexture(FILL_TEXTURE)
         tex:SetVertexColor(1, 0, 0, 1) -- pure, maximally bright red
         pip.texture = tex
 

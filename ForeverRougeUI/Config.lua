@@ -9,6 +9,11 @@ addon.defaults = {
     scale = 1.0,
     locked = false,
 
+    -- Which tracked abilities are turned off via the Options panel.
+    -- {} = everything enabled. This is real user preference (unlike
+    -- the tracker config below) so it's persisted across sessions.
+    disabledAbilities = {},
+
     energy = {
         width = 210,
         height = 20,
@@ -21,8 +26,10 @@ addon.defaults = {
         maxPoints = 5, -- bumped automatically if the server reports more
     },
 
-    -- One row, auto-centered directly above the energy bar, that shows
-    -- an icon+countdown only while each thing below is actually active.
+    -- One row, left-aligned to the energy bar, where every tracked
+    -- ability has its own permanent slot (see displayOrder below for
+    -- the left-to-right order) and shows an icon+countdown only while
+    -- actually active - an inactive one just leaves its slot empty.
     tracker = {
         iconSize = 32,
         spacing = 6,
@@ -116,9 +123,10 @@ addon.defaults = {
             "Sprint",
         },
 
-        -- Left-to-right order for whichever icons are currently active
-        -- (not creation order). Anything not listed here falls after
-        -- these, in whatever order it'd otherwise appear.
+        -- Left-to-right slot order (not creation order) - each ability
+        -- gets a permanent position in this order, whether or not it's
+        -- currently active. Anything not listed here falls after these,
+        -- in whatever order it'd otherwise appear.
         displayOrder = {
             "Slice and Dice",
             "Rupture",
@@ -140,6 +148,11 @@ function addon.GetDB()
             db[key] = addon.defaults[key]
         end
     end
+
+    -- Real user preference (set via the Options panel) - only
+    -- initialize it if missing, never overwrite it like the config
+    -- tables below.
+    db.disabledAbilities = db.disabledAbilities or {}
 
     -- Everything else (ability lists, fallback durations, icon sizing,
     -- etc.) is config that lives in this file, not end-user state. Use
