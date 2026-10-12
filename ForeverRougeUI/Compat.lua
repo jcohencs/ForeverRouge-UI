@@ -220,6 +220,34 @@ function addon.GetUnitAuraByIndex(unit, index, filter)
     return nil
 end
 
+-- Debug helper: /frui auras <unit> <filter> dumps every aura currently
+-- found on a unit (default target/HARMFUL), to see why a tracked debuff
+-- or buff isn't matching - wrong name, wrong source, or not found at
+-- all by either aura API.
+function addon.DebugAuras(unit, filter)
+    unit = unit or "target"
+    filter = filter or "HARMFUL"
+    print(("ForeverRogue UI aura dump: unit=%s filter=%s"):format(unit, filter))
+
+    if not UnitExists(unit) then
+        print("  unit does not exist")
+        return
+    end
+
+    local count = 0
+    for i = 1, 40 do
+        local name, _, duration, expirationTime, source = addon.GetUnitAuraByIndex(unit, i, filter)
+        if not name then break end
+        count = count + 1
+        print(("  [%d] '%s' source=%s duration=%s expirationTime=%s"):format(
+            i, name, tostring(source), tostring(duration), tostring(expirationTime)))
+    end
+
+    if count == 0 then
+        print("  (no auras found via either UnitAura or C_UnitAuras)")
+    end
+end
+
 -- Debug helper: /frui env prints which spellbook/cooldown APIs this
 -- client actually exposes, so we can target the real API instead of
 -- guessing at another combination blind.

@@ -98,7 +98,12 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
         else
             print("ForeverRogue UI: usage /frui debug <spell name>")
         end
+    elseif msg:match("^auras") then
+        local unit, filter = msg:match("^auras%s*(%a*)%s*(%a*)$")
+        unit = (unit and unit ~= "") and unit or "target"
+        filter = (filter and filter ~= "") and filter:upper() or (unit == "player" and "HELPFUL" or "HARMFUL")
+        if addon.DebugAuras then addon.DebugAuras(unit, filter) end
     else
-        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env")
+        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env, /frui auras <unit> <filter>")
     end
 end
