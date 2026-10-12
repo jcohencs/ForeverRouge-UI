@@ -64,11 +64,11 @@ function addon.InitComboPoints()
     end
 
     local watcher = CreateFrame("Frame")
-    watcher:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
-    watcher:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
-    watcher:RegisterUnitEvent("UNIT_MAXPOWER", "player")
-    watcher:RegisterEvent("PLAYER_TARGET_CHANGED")
-    watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
+    addon.SafeRegisterUnitEvent(watcher, "UNIT_POWER_UPDATE", "player")
+    addon.SafeRegisterUnitEvent(watcher, "UNIT_POWER_FREQUENT", "player")
+    addon.SafeRegisterUnitEvent(watcher, "UNIT_MAXPOWER", "player")
+    addon.SafeRegisterEvent(watcher, "PLAYER_TARGET_CHANGED")
+    addon.SafeRegisterEvent(watcher, "PLAYER_ENTERING_WORLD")
     watcher:SetScript("OnEvent", Update)
 
     Update()

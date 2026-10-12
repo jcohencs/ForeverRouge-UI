@@ -9,6 +9,18 @@ local ENERGY_POWER_TYPE = (Enum and Enum.PowerType and Enum.PowerType.Energy) or
 local COMBO_POWER_TYPE = (Enum and Enum.PowerType and Enum.PowerType.ComboPoints) or 4
 local SPELL_BOOK_TYPE = BOOKTYPE_SPELL or "spell"
 
+-- This server's core doesn't support every standard Blizzard event
+-- (e.g. LEARNED_SPELL_IN_TAB), and an unknown event throws a hard error
+-- on RegisterEvent instead of failing quietly. Use these everywhere
+-- instead of calling RegisterEvent/RegisterUnitEvent directly.
+function addon.SafeRegisterEvent(frame, event)
+    pcall(frame.RegisterEvent, frame, event)
+end
+
+function addon.SafeRegisterUnitEvent(frame, event, unit)
+    pcall(frame.RegisterUnitEvent, frame, event, unit)
+end
+
 function addon.GetEnergy()
     local current = UnitPower("player", ENERGY_POWER_TYPE)
     local max = UnitPowerMax("player", ENERGY_POWER_TYPE)

@@ -116,8 +116,8 @@ function addon.InitDebuffs()
     end
 
     local watcher = CreateFrame("Frame")
-    watcher:RegisterUnitEvent("UNIT_AURA", "target")
-    watcher:RegisterEvent("PLAYER_TARGET_CHANGED")
+    addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "target")
+    addon.SafeRegisterEvent(watcher, "PLAYER_TARGET_CHANGED")
     watcher:SetScript("OnEvent", UpdateAll)
 
     local ticker = CreateFrame("Frame")

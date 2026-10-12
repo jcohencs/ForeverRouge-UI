@@ -34,10 +34,10 @@ function addon.IsPlayerRogue()
 end
 
 local eventFrame = CreateFrame("Frame")
-eventFrame:RegisterEvent("PLAYER_LOGIN")
-eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-eventFrame:RegisterEvent("SPELLS_CHANGED")
-eventFrame:RegisterEvent("LEARNED_SPELL_IN_TAB")
+addon.SafeRegisterEvent(eventFrame, "PLAYER_LOGIN")
+addon.SafeRegisterEvent(eventFrame, "PLAYER_ENTERING_WORLD")
+addon.SafeRegisterEvent(eventFrame, "SPELLS_CHANGED")
+addon.SafeRegisterEvent(eventFrame, "LEARNED_SPELL_IN_TAB")
 eventFrame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         addon.GetDB()

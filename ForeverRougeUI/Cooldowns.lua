@@ -118,9 +118,9 @@ function addon.InitCooldowns()
     end
 
     local watcher = CreateFrame("Frame")
-    watcher:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-    watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
-    watcher:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+    addon.SafeRegisterEvent(watcher, "SPELL_UPDATE_COOLDOWN")
+    addon.SafeRegisterEvent(watcher, "PLAYER_ENTERING_WORLD")
+    addon.SafeRegisterUnitEvent(watcher, "UNIT_SPELLCAST_SUCCEEDED", "player")
     watcher:SetScript("OnEvent", UpdateAll)
 
     local ticker = CreateFrame("Frame")
