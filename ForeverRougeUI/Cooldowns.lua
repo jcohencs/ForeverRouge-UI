@@ -4,6 +4,13 @@ local addon = ForeverRougeUI
 local icons = {}
 local initialized
 
+-- Treat anything this short as the global cooldown, not a real
+-- ability cooldown, so using any spell doesn't flash every tracked icon.
+local GCD_THRESHOLD = 1.6
+-- How many seconds before an ability is ready to start glowing as a
+-- "coming up" alert.
+local READY_SOON_THRESHOLD = 5
+
 local function FormatTime(remaining)
     if remaining >= 60 then
         return ("%dm"):format(math.ceil(remaining / 60))
@@ -21,28 +28,29 @@ local function UpdateIcon(iconFrame)
         iconFrame.texture:SetTexture(texture)
     end
 
-    if not enabled or duration == 0 or start == 0 then
-        iconFrame.cooldown:Hide()
-        iconFrame.text:SetText("")
-        iconFrame.texture:SetDesaturated(false)
-        iconFrame:SetAlpha(1)
-        return
-    end
-
     local remaining = (start + duration) - GetTime()
-    if remaining <= 0 then
+
+    if not enabled or duration <= GCD_THRESHOLD or start == 0 or remaining <= 0 then
+        -- Ready (or not usable right now) - nothing to show.
         iconFrame.cooldown:Hide()
+        iconFrame.glow:Hide()
         iconFrame.text:SetText("")
-        iconFrame.texture:SetDesaturated(false)
-        iconFrame:SetAlpha(1)
+        iconFrame:Hide()
         return
     end
 
+    iconFrame:Show()
     iconFrame.cooldown:SetCooldown(start, duration)
     iconFrame.cooldown:Show()
-    iconFrame.texture:SetDesaturated(true)
-    iconFrame:SetAlpha(0.6)
     iconFrame.text:SetText(FormatTime(remaining))
+
+    if remaining <= READY_SOON_THRESHOLD then
+        iconFrame.glow:Show()
+        local pulse = 0.5 + 0.5 * math.abs(math.sin(GetTime() * 6))
+        iconFrame.glow:SetAlpha(pulse)
+    else
+        iconFrame.glow:Hide()
+    end
 end
 
 local function UpdateAll()
@@ -72,6 +80,7 @@ function addon.InitCooldowns()
         iconFrame.spellName = spellName
         iconFrame:SetSize(db.iconSize, db.iconSize)
         iconFrame:SetPoint("LEFT", row, "LEFT", (i - 1) * (db.iconSize + db.spacing), 0)
+        iconFrame:Hide() -- hidden by default; only shown while on cooldown
 
         iconFrame.texture = iconFrame:CreateTexture(nil, "ARTWORK")
         iconFrame.texture:SetAllPoints(iconFrame)
@@ -81,6 +90,15 @@ function addon.InitCooldowns()
         iconFrame.cooldown:SetAllPoints(iconFrame)
         iconFrame.cooldown:SetDrawEdge(true)
         iconFrame.cooldown:SetHideCountdownNumbers(true)
+
+        local glow = iconFrame:CreateTexture(nil, "OVERLAY")
+        glow:SetPoint("TOPLEFT", iconFrame, "TOPLEFT", -4, 4)
+        glow:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMRIGHT", 4, -4)
+        glow:SetTexture("Interface\\SpellActivationOverlay\\IconAlert")
+        glow:SetTexCoord(0.00781250, 0.50781250, 0.53515625, 0.78515625)
+        glow:SetBlendMode("ADD")
+        glow:Hide()
+        iconFrame.glow = glow
 
         iconFrame.text = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         iconFrame.text:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)
@@ -93,7 +111,6 @@ function addon.InitCooldowns()
         end)
         iconFrame:SetScript("OnLeave", GameTooltip_Hide)
 
-        -- Show the real icon once the spell is known client-side.
         local texture = addon.GetSpellIconTexture(spellName)
         iconFrame.texture:SetTexture(texture or "Interface\\Icons\\INV_Misc_QuestionMark")
 
@@ -103,6 +120,7 @@ function addon.InitCooldowns()
     local watcher = CreateFrame("Frame")
     watcher:RegisterEvent("SPELL_UPDATE_COOLDOWN")
     watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
+    watcher:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     watcher:SetScript("OnEvent", UpdateAll)
 
     local ticker = CreateFrame("Frame")

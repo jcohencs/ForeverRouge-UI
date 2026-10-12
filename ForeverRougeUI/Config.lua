@@ -21,6 +21,17 @@ addon.defaults = {
         maxPoints = 5, -- bumped automatically if the server reports more
     },
 
+    debuffs = {
+        iconSize = 30,
+        spacing = 6,
+        -- Your own bleeds/DoTs to watch on the current target. Shows
+        -- only while the debuff is actually up, with remaining time.
+        tracked = {
+            "Rupture",
+            "Garrote",
+        },
+    },
+
     cooldowns = {
         iconSize = 36,
         spacing = 6,

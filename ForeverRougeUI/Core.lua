@@ -3,7 +3,7 @@ local addon = ForeverRougeUI
 
 local frame = CreateFrame("Frame", "ForeverRougeUIFrame", UIParent)
 addon.frame = frame
-frame:SetSize(300, 110)
+frame:SetSize(300, 150)
 frame:SetMovable(true)
 frame:SetClampedToScreen(true)
 frame:EnableMouse(false)
@@ -36,11 +36,18 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("SPELLS_CHANGED")
+eventFrame:RegisterEvent("LEARNED_SPELL_IN_TAB")
 eventFrame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         addon.GetDB()
         ApplyPosition()
         ApplyLock()
+    end
+
+    if event == "SPELLS_CHANGED" or event == "LEARNED_SPELL_IN_TAB" then
+        if addon.InvalidateSpellBookCache then addon.InvalidateSpellBookCache() end
+        return
     end
 
     if not addon.IsPlayerRogue() then
@@ -53,6 +60,7 @@ eventFrame:SetScript("OnEvent", function(_, event)
     if addon.InitCooldowns then addon.InitCooldowns() end
     if addon.InitEnergy then addon.InitEnergy() end
     if addon.InitComboPoints then addon.InitComboPoints() end
+    if addon.InitDebuffs then addon.InitDebuffs() end
 end)
 
 SLASH_FOREVERROGUEUI1 = "/frui"
@@ -81,7 +89,14 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
         else
             print("ForeverRogue UI: usage /frui scale 1.0")
         end
+    elseif msg:match("^debug") then
+        local spellName = msg:match("^debug%s+(.+)$")
+        if spellName and addon.DebugSpell then
+            addon.DebugSpell(spellName)
+        else
+            print("ForeverRogue UI: usage /frui debug <spell name>")
+        end
     else
-        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>")
+        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>")
     end
 end

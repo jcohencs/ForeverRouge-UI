@@ -18,3 +18,4 @@ Core.lua
 Cooldowns.lua
 Energy.lua
 ComboPoints.lua
+Debuffs.lua

@@ -56,6 +56,7 @@ function addon.InitComboPoints()
     initialized = true
 
     row = CreateFrame("Frame", "ForeverRougeUIComboRow", addon.frame)
+    addon.comboRow = row
     if addon.energyBar then
         row:SetPoint("TOP", addon.energyBar, "BOTTOM", 0, -8)
     else
