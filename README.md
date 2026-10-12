@@ -85,6 +85,16 @@ in your spellbook (wrong spec, or on this server's rune-engraving
 system the rune isn't engraved yet), or the name in `Config.lua`
 doesn't exactly match the one in your spellbook/aura.
 
+This server's aura reads (`targetDebuffs`/`playerBuffs`) are also a bit
+flaky at the API level — they intermittently come back empty for a
+split second even while the real effect is still up. The addon tolerates
+up to 1 second of that (`AURA_FLAKE_GRACE` in `Tracker.lua`) before
+actually hiding an icon, so brief hiccups don't cause flicker. If an
+aura-tracked icon still never shows at all (not even flickering), run
+`/frui auras target HARMFUL` (or `player HELPFUL` for a buff) while the
+effect is active, or `/frui auralog on` to watch it live — that'll show
+whether it's being found under a different name/filter than expected.
+
 ### Some cooldowns are an estimate, on purpose
 
 Blizzard deliberately seals the real cooldown numbers for some

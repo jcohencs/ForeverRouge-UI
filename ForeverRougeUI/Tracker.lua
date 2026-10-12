@@ -16,6 +16,16 @@ local row, initialized
 
 local GCD_THRESHOLD = 1.6
 local READY_SOON_THRESHOLD = 5
+-- This server's aura API (UnitAura/C_UnitAuras) is flaky: it
+-- intermittently returns no data for a unit even while the real aura
+-- is confirmed still active (verified live - a known debuff vanished
+-- from several consecutive reads, then reappeared with its
+-- expirationTime completely unchanged, proving it was never actually
+-- removed). Since the row polls every 0.1s, trusting a single miss
+-- would hide-then-reshow icons faster than the eye can see, looking
+-- like "it just doesn't work." So a miss only hides the icon once this
+-- many seconds have passed with zero successful reads.
+local AURA_FLAKE_GRACE = 1.0
 
 local function FormatTime(remaining)
     if remaining >= 60 then
@@ -129,7 +139,13 @@ local function FindAura(unit, name, filter)
     name = name:lower()
     for i = 1, 40 do
         local auraName, icon, duration, expirationTime, source = addon.GetUnitAuraByIndex(unit, i, filter)
-        if not auraName then break end
+        if not auraName then
+            -- The read API is flaky - retry once immediately before
+            -- concluding the list actually ends here, so one bad read
+            -- doesn't wipe out every aura after it in this same scan.
+            auraName, icon, duration, expirationTime, source = addon.GetUnitAuraByIndex(unit, i, filter)
+            if not auraName then break end
+        end
         if auraName:lower() == name and (filter == "HELPFUL" or source == "player" or source == nil) then
             return icon, duration, expirationTime
         end
@@ -142,16 +158,25 @@ local function UpdateAuraIcon(iconFrame)
     local filter = iconFrame.kind == "playerBuff" and "HELPFUL" or "HARMFUL"
 
     if unit == "target" and not UnitExists("target") then
+        iconFrame.lastSeenTime = nil
         HideIcon(iconFrame)
         return
     end
 
     local icon, duration, expirationTime = FindAura(unit, iconFrame.spellName, filter)
     if not icon then
+        -- Could be the aura genuinely gone, or this server's flaky aura
+        -- API missing a read it would've gotten right a tick later.
+        -- Don't trust a miss until the grace period's run out.
+        if iconFrame.lastSeenTime and (GetTime() - iconFrame.lastSeenTime) < AURA_FLAKE_GRACE then
+            return -- leave the icon exactly as it was last tick
+        end
+        iconFrame.lastSeenTime = nil
         HideIcon(iconFrame)
         return
     end
 
+    iconFrame.lastSeenTime = GetTime()
     iconFrame:Show()
     if iconFrame.texture:GetTexture() ~= icon then
         iconFrame.texture:SetTexture(icon)
@@ -177,6 +202,16 @@ end
 -- ---------------------------------------------------------------------
 -- Shared update + auto-centering layout
 -- ---------------------------------------------------------------------
+
+local function OnTargetChanged()
+    -- A new target starts with a clean slate - don't let a grace
+    -- window armed for the previous target linger onto this one.
+    for _, iconFrame in ipairs(icons) do
+        if iconFrame.kind == "targetDebuff" then
+            iconFrame.lastSeenTime = nil
+        end
+    end
+end
 
 local function UpdateIcon(iconFrame)
     if iconFrame.kind == "cooldown" then
@@ -297,6 +332,8 @@ function addon.InitTracker()
     watcher:SetScript("OnEvent", function(_, event, unit, _, spellID)
         if event == "UNIT_SPELLCAST_SUCCEEDED" and unit == "player" then
             OnSpellCastSucceeded(spellID)
+        elseif event == "PLAYER_TARGET_CHANGED" then
+            OnTargetChanged()
         end
         UpdateAll()
     end)
