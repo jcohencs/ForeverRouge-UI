@@ -85,11 +85,11 @@ addon.defaults = {
         -- tracks the combo point count right up until a finisher
         -- consumes it, so this reflects what you actually spent, not a
         -- guess. Confirmed in-game: Rupture is 6 + 2 per point (8s at
-        -- 1 CP up to 16s at 5 CP), Slice and Dice is 9 + 3 per point
-        -- (12s at 1 CP up to 24s at 5 CP) - adjust if either ever changes.
+        -- 1 CP up to 16s at 5 CP), Slice and Dice is 6 + 3 per point
+        -- (9s at 1 CP up to 21s at 5 CP) - adjust if either ever changes.
         comboScaledDurations = {
             Rupture = { base = 6, perPoint = 2 },
-            ["Slice and Dice"] = { base = 9, perPoint = 3 },
+            ["Slice and Dice"] = { base = 6, perPoint = 3 },
         },
 
         -- Debuffs you apply to your current target. Tries to read the
