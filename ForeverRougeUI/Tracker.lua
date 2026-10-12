@@ -42,7 +42,6 @@ local function FormatTime(remaining)
 end
 
 local function HideIcon(iconFrame)
-    iconFrame.cooldown:Hide()
     iconFrame.text:SetText("")
     iconFrame:Hide()
 end
@@ -70,8 +69,6 @@ local function UpdateSecretCooldownIcon(iconFrame)
     end
 
     iconFrame:Show()
-    iconFrame.cooldown:SetCooldown(iconFrame.fallbackStart, iconFrame.fallbackDuration)
-    iconFrame.cooldown:Show()
     iconFrame.text:SetText(FormatTime(remaining) .. "*")
 end
 
@@ -99,8 +96,6 @@ local function UpdateCooldownIcon(iconFrame)
     end
 
     iconFrame:Show()
-    iconFrame.cooldown:SetCooldown(start, duration)
-    iconFrame.cooldown:Show()
     iconFrame.text:SetText(FormatTime(remaining))
 end
 
@@ -214,8 +209,6 @@ end
 
 local function ShowFromCastFallback(iconFrame, remaining)
     iconFrame:Show()
-    iconFrame.cooldown:SetCooldown(iconFrame.castFallbackStart, iconFrame.castFallbackDuration)
-    iconFrame.cooldown:Show()
     iconFrame.text:SetText(FormatTime(remaining) .. "*")
 end
 
@@ -249,8 +242,6 @@ local function UpdateAuraIcon(iconFrame)
                 iconFrame.lastKnownDuration = duration
                 local remaining = expirationTime - GetTime()
                 if remaining > 0 then
-                    iconFrame.cooldown:SetCooldown(expirationTime - duration, duration)
-                    iconFrame.cooldown:Show()
                     iconFrame.text:SetText(FormatTime(remaining))
                     return
                 end
@@ -259,7 +250,6 @@ local function UpdateAuraIcon(iconFrame)
             end
 
             -- No duration info (permanent-style effect) - just show the icon.
-            iconFrame.cooldown:Hide()
             iconFrame.text:SetText("")
             return
         end
@@ -275,8 +265,6 @@ local function UpdateAuraIcon(iconFrame)
                 local remaining = iconFrame.lastKnownExpiration - GetTime()
                 if remaining > 0 then
                     iconFrame:Show()
-                    iconFrame.cooldown:SetCooldown(iconFrame.lastKnownExpiration - iconFrame.lastKnownDuration, iconFrame.lastKnownDuration)
-                    iconFrame.cooldown:Show()
                     iconFrame.text:SetText(FormatTime(remaining))
                     return
                 end
@@ -388,24 +376,11 @@ local function CreateIcon(db, kind, spellName)
     iconFrame.texture:SetAllPoints(iconFrame)
     iconFrame.texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-    iconFrame.cooldown = CreateFrame("Cooldown", nil, iconFrame, "CooldownFrameTemplate")
-    iconFrame.cooldown:SetAllPoints(iconFrame)
-    iconFrame.cooldown:SetDrawEdge(false) -- no bright rotating line during the countdown
-    iconFrame.cooldown:SetDrawBling(false) -- no bright flash when it completes
-    iconFrame.cooldown:SetHideCountdownNumbers(true)
-    iconFrame.cooldown:SetSwipeColor(0, 0, 0, 0.45) -- lighter swipe so the icon/text underneath stays readable
-
-    -- The Cooldown widget is a child frame that Blizzard's template
-    -- elevates above its parent by default, so its swipe draws over
-    -- plain layer-based content on iconFrame itself regardless of
-    -- layer ("OVERLAY" only wins within the same frame level). Giving
-    -- the countdown text its own frame explicitly above the cooldown's
-    -- is what actually puts it on top.
-    local textFrame = CreateFrame("Frame", nil, iconFrame)
-    textFrame:SetAllPoints(iconFrame)
-    textFrame:SetFrameLevel(iconFrame.cooldown:GetFrameLevel() + 1)
-    iconFrame.text = textFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    iconFrame.text:SetPoint("CENTER", textFrame, "CENTER", 0, 0)
+    -- No cooldown-swipe overlay at all - just the icon with a big,
+    -- outlined countdown number on top of it.
+    iconFrame.text = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    iconFrame.text:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)
+    iconFrame.text:SetFont(iconFrame.text:GetFont(), 18, "OUTLINE")
 
     iconFrame:EnableMouse(true)
     iconFrame:SetScript("OnEnter", function(self)
