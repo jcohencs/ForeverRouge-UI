@@ -395,8 +395,17 @@ local function CreateIcon(db, kind, spellName)
     iconFrame.cooldown:SetHideCountdownNumbers(true)
     iconFrame.cooldown:SetSwipeColor(0, 0, 0, 0.45) -- lighter swipe so the icon/text underneath stays readable
 
-    iconFrame.text = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    iconFrame.text:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)
+    -- The Cooldown widget is a child frame that Blizzard's template
+    -- elevates above its parent by default, so its swipe draws over
+    -- plain layer-based content on iconFrame itself regardless of
+    -- layer ("OVERLAY" only wins within the same frame level). Giving
+    -- the countdown text its own frame explicitly above the cooldown's
+    -- is what actually puts it on top.
+    local textFrame = CreateFrame("Frame", nil, iconFrame)
+    textFrame:SetAllPoints(iconFrame)
+    textFrame:SetFrameLevel(iconFrame.cooldown:GetFrameLevel() + 1)
+    iconFrame.text = textFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    iconFrame.text:SetPoint("CENTER", textFrame, "CENTER", 0, 0)
 
     iconFrame:EnableMouse(true)
     iconFrame:SetScript("OnEnter", function(self)
