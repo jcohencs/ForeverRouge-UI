@@ -353,7 +353,8 @@ local function CreateIcon(db, kind, spellName)
 
     iconFrame.cooldown = CreateFrame("Cooldown", nil, iconFrame, "CooldownFrameTemplate")
     iconFrame.cooldown:SetAllPoints(iconFrame)
-    iconFrame.cooldown:SetDrawEdge(true)
+    iconFrame.cooldown:SetDrawEdge(false) -- no bright rotating line during the countdown
+    iconFrame.cooldown:SetDrawBling(false) -- no bright flash when it completes
     iconFrame.cooldown:SetHideCountdownNumbers(true)
 
     local glow = iconFrame:CreateTexture(nil, "OVERLAY")
