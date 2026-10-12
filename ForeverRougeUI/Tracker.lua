@@ -2,8 +2,8 @@ ForeverRougeUI = ForeverRougeUI or {}
 local addon = ForeverRougeUI
 
 -- A single row that tracks three kinds of things, all rendered the same
--- way (icon + countdown + "coming up" glow), auto-centered above the
--- energy bar, showing only while actually active:
+-- way (icon + countdown), auto-centered above the energy bar, showing
+-- only while actually active:
 --   "cooldown"     - a true ability reuse cooldown (Kick, Sprint, ...)
 --   "targetDebuff" - a debuff you applied to your target (Rupture,
 --                    Kidney Shot's stun, Gouge) - tracked by the aura's
@@ -15,7 +15,6 @@ local icons = {}
 local row, initialized
 
 local GCD_THRESHOLD = 1.6
-local READY_SOON_THRESHOLD = 5
 -- This server's aura API (UnitAura/C_UnitAuras) is flaky: it
 -- intermittently returns no data for a unit even while the real aura
 -- is confirmed still active (verified live - a known debuff vanished
@@ -37,19 +36,8 @@ local function FormatTime(remaining)
     end
 end
 
-local function SetGlow(iconFrame, remaining)
-    if remaining and remaining <= READY_SOON_THRESHOLD then
-        iconFrame.glow:Show()
-        local pulse = 0.5 + 0.5 * math.abs(math.sin(GetTime() * 6))
-        iconFrame.glow:SetAlpha(pulse)
-    else
-        iconFrame.glow:Hide()
-    end
-end
-
 local function HideIcon(iconFrame)
     iconFrame.cooldown:Hide()
-    iconFrame.glow:Hide()
     iconFrame.text:SetText("")
     iconFrame:Hide()
 end
@@ -80,7 +68,6 @@ local function UpdateSecretCooldownIcon(iconFrame)
     iconFrame.cooldown:SetCooldown(iconFrame.fallbackStart, iconFrame.fallbackDuration)
     iconFrame.cooldown:Show()
     iconFrame.text:SetText(FormatTime(remaining) .. "*")
-    SetGlow(iconFrame, remaining)
 end
 
 local function UpdateCooldownIcon(iconFrame)
@@ -110,7 +97,6 @@ local function UpdateCooldownIcon(iconFrame)
     iconFrame.cooldown:SetCooldown(start, duration)
     iconFrame.cooldown:Show()
     iconFrame.text:SetText(FormatTime(remaining))
-    SetGlow(iconFrame, remaining)
 end
 
 local warnedNoFallback = {}
@@ -226,7 +212,6 @@ local function ShowFromCastFallback(iconFrame, remaining)
     iconFrame.cooldown:SetCooldown(iconFrame.castFallbackStart, iconFrame.castFallbackDuration)
     iconFrame.cooldown:Show()
     iconFrame.text:SetText(FormatTime(remaining) .. "*")
-    SetGlow(iconFrame, remaining)
 end
 
 local function UpdateAuraIcon(iconFrame)
@@ -260,14 +245,12 @@ local function UpdateAuraIcon(iconFrame)
                     iconFrame.cooldown:SetCooldown(expirationTime - duration, duration)
                     iconFrame.cooldown:Show()
                     iconFrame.text:SetText(FormatTime(remaining))
-                    SetGlow(iconFrame, remaining)
                     return
                 end
             end
 
             -- No duration info (permanent-style effect) - just show the icon.
             iconFrame.cooldown:Hide()
-            iconFrame.glow:Hide()
             iconFrame.text:SetText("")
             return
         end
@@ -356,15 +339,6 @@ local function CreateIcon(db, kind, spellName)
     iconFrame.cooldown:SetDrawEdge(false) -- no bright rotating line during the countdown
     iconFrame.cooldown:SetDrawBling(false) -- no bright flash when it completes
     iconFrame.cooldown:SetHideCountdownNumbers(true)
-
-    local glow = iconFrame:CreateTexture(nil, "OVERLAY")
-    glow:SetPoint("TOPLEFT", iconFrame, "TOPLEFT", -4, 4)
-    glow:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMRIGHT", 4, -4)
-    glow:SetTexture("Interface\\SpellActivationOverlay\\IconAlert")
-    glow:SetTexCoord(0.00781250, 0.50781250, 0.53515625, 0.78515625)
-    glow:SetBlendMode("ADD")
-    glow:Hide()
-    iconFrame.glow = glow
 
     iconFrame.text = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     iconFrame.text:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)

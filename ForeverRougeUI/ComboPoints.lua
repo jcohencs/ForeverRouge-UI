@@ -14,9 +14,11 @@ local function RebuildPips(maxPoints)
     local totalWidth = maxPoints * db.pointSize + math.max(0, maxPoints - 1) * db.spacing
     row:SetSize(totalWidth, db.pointSize)
 
-    -- A circular alpha mask turns a plain square texture into a circle -
-    -- the same trick Blizzard uses for round portraits.
-    local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
+    -- A plain round dot icon, tinted via vertex color, instead of
+    -- masking a square texture into a circle - :SetMask doesn't
+    -- reliably work on this server's client, so this is the safer,
+    -- universally-supported way to get a circle.
+    local ROUND_ICON = "Interface\\COMMON\\Indicator-Gray"
 
     for i = 1, maxPoints do
         local pip = CreateFrame("Frame", nil, row)
@@ -28,8 +30,8 @@ local function RebuildPips(maxPoints)
         -- point is filled.
         local outline = pip:CreateTexture(nil, "BORDER")
         outline:SetAllPoints(pip)
-        outline:SetColorTexture(0, 0, 0, 1)
-        outline:SetMask(CIRCLE_MASK)
+        outline:SetTexture(ROUND_ICON)
+        outline:SetVertexColor(0, 0, 0, 1)
         pip.outline = outline
 
         -- Colored fill, inset slightly so the outline reads as a ring,
@@ -37,8 +39,8 @@ local function RebuildPips(maxPoints)
         local tex = pip:CreateTexture(nil, "ARTWORK")
         tex:SetPoint("TOPLEFT", pip, "TOPLEFT", 2, -2)
         tex:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", -2, 2)
-        tex:SetColorTexture(1, 0.2, 0.2, 1)
-        tex:SetMask(CIRCLE_MASK)
+        tex:SetTexture(ROUND_ICON)
+        tex:SetVertexColor(1, 0.2, 0.2, 1)
         pip.texture = tex
 
         pips[i] = pip
