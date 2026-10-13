@@ -89,8 +89,14 @@ function addon.ApplyComboBarChoice()
 end
 
 function addon.IsPlayerRogue()
-    local _, class = UnitClass("player")
-    return class == "ROGUE"
+    -- UnitClass returns (localizedClass, englishClass) - the second
+    -- value should be the stable all-caps constant "ROGUE" regardless
+    -- of locale, but this server's hybrid client has been seen to hand
+    -- back something differently-cased instead, which would silently
+    -- make this always false. Check both returns, case-insensitively.
+    local localizedClass, englishClass = UnitClass("player")
+    return (englishClass and englishClass:upper() == "ROGUE")
+        or (localizedClass and localizedClass:upper() == "ROGUE")
 end
 
 local eventFrame = CreateFrame("Frame")
@@ -330,16 +336,32 @@ local function CreateOptionsPanel()
         if not db.abilityOrder then
             return GetTrackedAbilityNames()
         end
+
+        local current = GetTrackedAbilityNames()
+        local currentSet = {}
+        for _, name in ipairs(current) do currentSet[name] = true end
+
         -- Keep it in sync if Config.lua's ability lists changed since
-        -- the user last reordered - append anything missing rather
-        -- than losing track of it.
-        local present = {}
-        for _, name in ipairs(db.abilityOrder) do present[name] = true end
-        for _, name in ipairs(GetTrackedAbilityNames()) do
-            if not present[name] then
-                db.abilityOrder[#db.abilityOrder + 1] = name
+        -- the user last reordered: drop anything that's no longer
+        -- actually tracked (a removed ability, or one renamed to match
+        -- its real spellbook name - e.g. "Eureka" -> "Eureka!" - would
+        -- otherwise stay in here forever with no matching checkbox,
+        -- which crashes the panel below), then append anything newly
+        -- added rather than losing track of it.
+        local kept, present = {}, {}
+        for _, name in ipairs(db.abilityOrder) do
+            if currentSet[name] and not present[name] then
+                kept[#kept + 1] = name
+                present[name] = true
             end
         end
+        for _, name in ipairs(current) do
+            if not present[name] then
+                kept[#kept + 1] = name
+                present[name] = true
+            end
+        end
+        db.abilityOrder = kept
         return db.abilityOrder
     end
 
