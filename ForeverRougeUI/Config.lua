@@ -132,6 +132,22 @@ addon.defaults = {
             ["Slice and Dice"] = { base = 6, perPoint = 3 },
         },
 
+        -- Abilities that grant a limited number of charges consumed by
+        -- your own actions (Eureka!: 3 charges, one consumed per non-
+        -- periodic ability/spell while it's up) rather than expiring
+        -- purely on a timer. This server seals buff aura data while
+        -- you're in combat (confirmed: reading Eureka!'s aura mid-fight
+        -- throws "Auras cannot be accessed when secret"), so there's
+        -- no way to read the real remaining charges live during the
+        -- exact time it matters - instead, the addon counts your own
+        -- successful casts itself, starting at this number each time
+        -- the buff is (re)applied and counting down to 0, at which
+        -- point the icon disappears immediately rather than waiting
+        -- out the rest of the duration.
+        chargeCounts = {
+            ["Eureka!"] = 3,
+        },
+
         -- Debuffs you apply to your current target. Tries to read the
         -- aura's real remaining duration first; if that comes back
         -- empty on this server, falls back to the estimate above,
