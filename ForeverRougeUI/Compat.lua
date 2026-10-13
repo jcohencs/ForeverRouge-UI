@@ -340,36 +340,6 @@ function addon.SetAuraLogging(enabled)
     print("ForeverRogue UI: aura logging " .. (enabled and "ON - watch chat as you apply things." or "OFF") .. ".")
 end
 
--- Debug helper: /frui misslog on|off - COMBAT_TEXT_UPDATE is a
--- different mechanism entirely from combat log or chat messages: it's
--- what drives Blizzard's own floating combat text (the numbers/"Miss"
--- that pop up over a target), so it might not be blocked by whatever
--- blocks COMBAT_LOG_EVENT_UNFILTERED on this server, and the old
--- CHAT_MSG_*_MISSES events never firing at all doesn't necessarily
--- mean this one doesn't either. Worth one more look before giving up
--- on miss detection for good.
-local missLogFrame
-local missLogEnabled = false
-
-function addon.SetMissLogging(enabled)
-    missLogEnabled = enabled
-
-    if enabled and not missLogFrame then
-        missLogFrame = CreateFrame("Frame")
-        addon.SafeRegisterEvent(missLogFrame, "COMBAT_TEXT_UPDATE")
-        missLogFrame:SetScript("OnEvent", function(_, event, ...)
-            if not missLogEnabled then return end
-            local n = select("#", ...)
-            local parts = {}
-            for i = 1, n do
-                parts[i] = tostring((select(i, ...)))
-            end
-            print(("ForeverRogue UI miss-log: [%s] %s"):format(event, table.concat(parts, ", ")))
-        end)
-    end
-
-    print("ForeverRogue UI: miss logging " .. (enabled and "ON - watch chat as you attack something." or "OFF") .. ".")
-end
 
 -- Debug helper: /frui env prints which spellbook/cooldown APIs this
 -- client actually exposes, so we can target the real API instead of
