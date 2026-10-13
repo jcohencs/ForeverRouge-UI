@@ -78,6 +78,10 @@ function addon.ApplyComboBarChoice()
         end
     end
 
+    -- The energy bar is part of the addon's own resource display, same
+    -- as the combo bar - shown/hidden together.
+    if addon.ApplyEnergyBarVisibility then addon.ApplyEnergyBarVisibility() end
+
     -- The tracker row anchors above whichever combo display is
     -- actually the active one, so its icons don't end up anchored to
     -- a now-hidden frame.

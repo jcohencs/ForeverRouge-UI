@@ -12,6 +12,17 @@ local function Update()
     end
 end
 
+-- The energy bar is part of the addon's own resource display, same as
+-- the combo bar - shown together only when "Use addon combo bar" is
+-- checked, since Blizzard's Personal Resource Display already covers
+-- health/power when that's the active choice instead. The ability
+-- tracker above it is unaffected either way (see Tracker.lua).
+function addon.ApplyEnergyBarVisibility()
+    if bar then
+        bar:SetShown(addon.GetDB().showComboPoints)
+    end
+end
+
 function addon.InitEnergy()
     if initialized then
         Update()
@@ -54,4 +65,5 @@ function addon.InitEnergy()
     watcher:SetScript("OnEvent", Update)
 
     Update()
+    addon.ApplyEnergyBarVisibility()
 end

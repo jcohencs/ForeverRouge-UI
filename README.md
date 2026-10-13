@@ -1,13 +1,18 @@
 # ForeverRogue UI
 
 A lightweight Rogue HUD addon for World of Warcraft Forever: an energy
-bar and a single tracker row — left-aligned to the energy bar, Slice
-and Dice always first — for cooldowns, your bleeds/CC on your target,
-and your own buffs. These always show for Rogue characters. Combo
-points use Blizzard's own Personal Resource Display by default, with
-an optional addon-drawn combo bar you can switch on in the Options
-panel (see below) - the ability tracker row always anchors itself
-above whichever one of the two is currently active.
+bar, a combo point bar, and a single ability tracker row — left-aligned
+to the energy bar, Slice and Dice always first — for cooldowns, your
+bleeds/CC on your target, and your own buffs.
+
+The ability tracker row always shows for Rogue characters, regardless
+of anything below. The energy bar and combo bar are a pair, and are
+off by default - by default you just get Blizzard's own Personal
+Resource Display for health/power/combo, same as without this addon.
+Check **"Use addon combo bar"** in the Options panel (see below) to
+turn on the addon's own energy + combo bar together (and turn
+Blizzard's own display off); the ability tracker re-anchors itself
+above whichever of the two is currently active either way.
 
 ## Install
 
@@ -32,8 +37,9 @@ version 1.60.1).
 
 ## Usage
 
-The HUD appears automatically for Rogue characters, centered a bit below
-the middle of the screen. Drag it into place:
+The ability tracker row appears automatically for Rogue characters,
+centered a bit below the middle of the screen (above whichever combo
+display is active). Drag the frame into place:
 
 - `/frui unlock` — unlock the frame so you can drag it
 - `/frui lock` — lock it back in place
@@ -50,18 +56,19 @@ immediately and is remembered across sessions.
 
 ## The tracker row
 
-One row, left-aligned to the energy bar, showing only the
-currently-active abilities **packed together with no gaps** — an
-inactive one just doesn't take up space, rather than leaving an empty
-slot. They're packed in priority order set by `tracker.displayOrder`
-(Slice and Dice always leads, Expose Armor is always second when it's
-up, then Rupture, then Blade Flurry, then everything else) unless
-you've customized the order in the Options panel, which then takes
-over. If the active abilities would run wider than the energy bar, it
-wraps onto a second row, stacked directly above the first, rather than
-drifting off past the bar's right edge. Never more than 2 rows — past
-that, each row just widens to fit everything in, instead of adding a
-third.
+One row, left-aligned to the energy bar's width (whether or not the
+energy bar itself is currently showing - see Combo points below),
+showing only the currently-active abilities **packed together with no
+gaps** — an inactive one just doesn't take up space, rather than
+leaving an empty slot. They're packed in priority order set by
+`tracker.displayOrder` (Slice and Dice always leads, Expose Armor is
+always second when it's up, then Rupture, then Blade Flurry, then
+everything else) unless you've customized the order in the Options
+panel, which then takes over. If the active abilities would run wider
+than that, it wraps onto a second row, stacked directly above the
+first, rather than drifting off past the edge. Never more than 2 rows
+— past that, each row just widens to fit everything in, instead of
+adding a third.
 
 It tracks three kinds of things, configured in `Config.lua` under
 `tracker`:
@@ -157,31 +164,37 @@ moment you toggle that setting. Falls back to anchoring above the
 energy bar if neither reference exists on this client. This only
 positions our own row relative to the other frame as a reference point
 — it never touches that frame's own position, so it doesn't fight Edit
-Mode the way actually moving Blizzard's frame would. The energy bar
-sits in its own fixed spot on the addon's frame regardless.
+Mode the way actually moving Blizzard's frame would. The addon's own
+combo bar, in turn, sits directly above the energy bar. Both the
+energy bar and the addon's combo bar sit in their own fixed spot on
+the addon's frame when they're showing (see Combo points below for
+when that is).
 
 ## Combo points
 
 By default, shown via Blizzard's own **Personal Resource Display**
-above your character, not drawn by this addon. That display is
-controlled by a client setting (Options → Combat → "Personal Resource
-Display", CVar `nameplateShowSelf`) which this addon manages for you,
-so combo points show up out of the box without having to go find that
-setting yourself. If you want it positioned differently (e.g. nearer
-this HUD), use **Edit Mode** (Esc → Edit Mode) to drag it — that's the
-supported way to move it, since Edit Mode re-applies its own saved
-position on every login and would fight any attempt by this addon to
-reposition it in code.
+above your character, not drawn by this addon - and the addon's own
+energy bar stays hidden too, since Blizzard's display already covers
+health/power. That display is controlled by a client setting (Options
+→ Combat → "Personal Resource Display", CVar `nameplateShowSelf`)
+which this addon manages for you, so combo points show up out of the
+box without having to go find that setting yourself. If you want it
+positioned differently (e.g. nearer this HUD), use **Edit Mode** (Esc
+→ Edit Mode) to drag it — that's the supported way to move it, since
+Edit Mode re-applies its own saved position on every login and would
+fight any attempt by this addon to reposition it in code.
 
-If you'd rather have the addon draw its own combo point bar instead,
+If you'd rather have the addon draw its own resource bars instead,
 check **"Use addon combo bar (instead of Blizzard's)"** in the Options
-panel — it appears centered above the energy bar (with the ability
-tracker row re-anchoring itself above it too), and checking it
-automatically turns Blizzard's own display off (unchecking it turns
-Blizzard's back on), so only one is ever shown at a time. The energy
-bar and ability tracker keep showing regardless of this choice - it
-only changes which combo display is active. Turning Blizzard's off is
-a two-part fix: the CVar alone didn't actually hide its health/power
+panel — this brings up both the addon's energy bar and its combo point
+bar together (the combo bar centered directly above the energy bar),
+and turns Blizzard's own display off at the same time (unchecking it
+turns Blizzard's back on and hides the addon's energy/combo bars
+again), so only one pair is ever shown. The ability tracker row keeps
+showing regardless of this choice either way - it only changes which
+resource/combo display is active, and the tracker re-anchors itself to
+match. Turning Blizzard's off is a two-part fix: the CVar alone didn't
+actually hide its health/power
 bar, so the addon also directly `:Hide()`s that frame and keeps
 re-hiding it if something tries to show it again (it gets re-shown on
 things like entering combat regardless of the CVar). Custom circular
