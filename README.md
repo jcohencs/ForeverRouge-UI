@@ -104,26 +104,21 @@ tracker = {
   it falls back to a self-timed estimate from `fallbackDurations`
   instead, same idea as the sealed-cooldown fallback below.
 
-  Since a cast can still miss/be dodged/parried/resisted, the addon
-  also watches for that (confirmed in-game: Rupture missed a player
-  and the tracker showed a countdown anyway without this) and cancels
-  the fallback timer the instant it happens, rather than showing a
-  debuff that never actually landed. Combat log
-  (`COMBAT_LOG_EVENT_UNFILTERED`) would be the normal way to do this,
-  but this server blocks addons from reading it at all ("this action
-  is only available to the Blizzard UI", confirmed in-game - the same
-  lockdown pattern as the sealed cooldowns/auras elsewhere), so instead
-  it reads the plain chat combat-text events
-  (`CHAT_MSG_SPELL_SELF_MISSES`/`CHAT_MSG_COMBAT_SELF_MISSES` - "Your
-  Rupture misses Playername.") and matches the spell name in the
-  message text. Those events turned out to depend on the "Self Misses"
-  category actually being enabled for a chat window (a client-side
-  filter, separate from the combat log block) - the addon forces that
-  on for the main chat frame at login (see Core.lua) so this doesn't
-  silently stop working depending on your chat settings. Matching by
-  spell name is still locale-dependent (English client only) and less
-  precise than a real spellId match, but it's the only lever left once
-  combat log itself is off the table.
+  **Known limitation:** since a cast can miss/be dodged/parried/
+  resisted, the fallback timer can show a debuff that never actually
+  landed (confirmed in-game: Rupture missed a player and the tracker
+  showed a countdown anyway). Every addon-accessible way to catch this
+  was tried and ruled out: combat log (`COMBAT_LOG_EVENT_UNFILTERED`)
+  is blocked outright ("this action is only available to the Blizzard
+  UI", confirmed in-game, even just reading it - the same lockdown
+  pattern as the sealed cooldowns/auras), the older pre-combat-log
+  chat events (`CHAT_MSG_SPELL_SELF_MISSES`/`CHAT_MSG_COMBAT_SELF_
+  MISSES` and their hit equivalents) never fire even after force-
+  enabling their message group via `ChatFrame_AddMessageGroup`, and
+  `COMBAT_TEXT_UPDATE` (the event behind Blizzard's own floating
+  combat text) doesn't fire either. This server's core simply never
+  generates any of that feedback for the client at all, so this is
+  accepted as a hard limitation rather than a bug to keep chasing.
 - **playerBuffs**: same idea, for buffs on yourself. Evasion, Sprint,
   and Eureka! live here rather than in `cooldowns`, so you see their
   active buff duration instead of their (much longer) full reuse

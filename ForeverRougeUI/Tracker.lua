@@ -248,32 +248,24 @@ local function OnSpellCastSucceeded(spellID)
     end
 end
 
--- UNIT_SPELLCAST_SUCCEEDED fires the instant a cast goes off, whether
--- or not it actually connects with the target - so the cast-fallback
--- timer armed above can start counting down a debuff/buff that never
--- actually landed (confirmed in-game: Rupture missed a player target
--- and the tracker still showed a countdown for it). Combat log
--- (COMBAT_LOG_EVENT_UNFILTERED) is blocked outright on this server
+-- NOTE: UNIT_SPELLCAST_SUCCEEDED fires the instant a cast goes off,
+-- whether or not it actually connects with the target - so the cast-
+-- fallback timer armed above can start counting down a debuff/buff
+-- that never actually landed (confirmed in-game: Rupture missed a
+-- player target and the tracker still showed a countdown for it).
+-- This is an accepted hard limitation on this server, not a bug to
+-- keep chasing - every addon-accessible way to detect a miss was
+-- tried and ruled out: COMBAT_LOG_EVENT_UNFILTERED is blocked outright
 -- ("this action is only available to the Blizzard UI", even just
--- reading it - the same lockdown pattern as the sealed cooldowns/
--- auras elsewhere here), so this instead uses the older pre-combat-log
--- chat events (CHAT_MSG_SPELL_SELF_MISSES/CHAT_MSG_COMBAT_SELF_MISSES)
--- - these turned out to depend on the "Self Misses" category actually
--- being turned on for a chat window (Core.lua forces that on at
--- PLAYER_LOGIN so this doesn't silently stop working if it's off).
--- Matching by spell name in the message text is less precise than a
--- real spellId match (and locale-dependent - English client only),
--- but it's the only lever available once combat log itself is ruled
--- out.
-local function OnSelfMissMessage(message)
-    for _, iconFrame in ipairs(icons) do
-        if iconFrame.kind ~= "cooldown" and iconFrame.castFallbackStart
-            and message:find(iconFrame.spellName, 1, true) then
-            iconFrame.castFallbackStart = nil
-            HideIcon(iconFrame)
-        end
-    end
-end
+-- reading it), the old pre-combat-log chat events (CHAT_MSG_SPELL_
+-- SELF_MISSES/CHAT_MSG_COMBAT_SELF_MISSES and their hit equivalents)
+-- never fire even after force-enabling their message group via
+-- ChatFrame_AddMessageGroup, and COMBAT_TEXT_UPDATE (the floating
+-- combat text event) doesn't fire either. This server's core simply
+-- never generates any of that feedback for the client at all, so
+-- there's no toggle or workaround left - a missed Rupture/Gouge/
+-- Kidney Shot/Garrote will still show its fallback countdown as if it
+-- landed.
 
 -- ---------------------------------------------------------------------
 -- Aura-type icons (debuffs on target, buffs on self) - real durations,
@@ -638,25 +630,18 @@ function addon.InitTracker()
     addon.SafeRegisterEvent(watcher, "SPELL_UPDATE_COOLDOWN")
     addon.SafeRegisterEvent(watcher, "PLAYER_ENTERING_WORLD")
     addon.SafeRegisterEvent(watcher, "PLAYER_TARGET_CHANGED")
-    addon.SafeRegisterEvent(watcher, "CHAT_MSG_SPELL_SELF_MISSES")
-    addon.SafeRegisterEvent(watcher, "CHAT_MSG_COMBAT_SELF_MISSES")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_SPELLCAST_SUCCEEDED", "player")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "target")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "player")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_POWER_UPDATE", "player")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_POWER_FREQUENT", "player")
-    -- arg1/arg2/arg3 mean different things per event: for
-    -- UNIT_SPELLCAST_SUCCEEDED they're (unit, castGUID, spellID); for
-    -- the CHAT_MSG_*_MISSES events arg1 is the plain-text message.
-    watcher:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
-        if event == "UNIT_SPELLCAST_SUCCEEDED" and arg1 == "player" then
-            OnSpellCastSucceeded(arg3)
+    watcher:SetScript("OnEvent", function(_, event, unit, _, spellID)
+        if event == "UNIT_SPELLCAST_SUCCEEDED" and unit == "player" then
+            OnSpellCastSucceeded(spellID)
         elseif event == "PLAYER_TARGET_CHANGED" then
             OnTargetChanged()
         elseif event == "UNIT_POWER_UPDATE" or event == "UNIT_POWER_FREQUENT" then
             TrackComboPoints()
-        elseif event == "CHAT_MSG_SPELL_SELF_MISSES" or event == "CHAT_MSG_COMBAT_SELF_MISSES" then
-            OnSelfMissMessage(arg1)
         end
         UpdateAll()
     end)

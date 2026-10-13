@@ -93,30 +93,6 @@ eventFrame:SetScript("OnEvent", function(_, event)
         addon.GetDB()
         ApplyPosition()
         ApplyLock()
-
-        -- Make sure the chat message types the miss-detection
-        -- workaround (Tracker.lua) depends on are actually turned on -
-        -- confirmed in-game: with "Self Misses" filtered out of the
-        -- combat log chat tab, the underlying CHAT_MSG_SPELL_SELF_
-        -- MISSES/CHAT_MSG_COMBAT_SELF_MISSES events never fired at all
-        -- on this server, not even for our own event registration (so
-        -- it's not just a display filter here - this server appears
-        -- to gate the events themselves on it). Turn the group on for
-        -- the main chat frame regardless of what the player has
-        -- configured, so the addon doesn't silently stop working if
-        -- someone has it filtered out (or never had it on to begin
-        -- with).
-        if ChatFrame_AddMessageGroup and ChatFrame1 then
-            for _, group in ipairs({ "COMBAT_SELF_MISSES", "COMBAT_SELF_HITS", "COMBAT_SELF_DAMAGE" }) do
-                local ok, err = pcall(ChatFrame_AddMessageGroup, ChatFrame1, group)
-                if not ok then
-                    print(("ForeverRogue UI: ChatFrame_AddMessageGroup(%s) failed: %s"):format(group, tostring(err)))
-                end
-            end
-        else
-            print(("ForeverRogue UI: couldn't force-enable chat miss/hit groups (ChatFrame_AddMessageGroup=%s, ChatFrame1=%s)"):format(
-                tostring(ChatFrame_AddMessageGroup ~= nil), tostring(ChatFrame1 ~= nil)))
-        end
     end
 
     if event == "SPELLS_CHANGED" or event == "LEARNED_SPELL_IN_TAB" then
@@ -201,16 +177,12 @@ SlashCmdList["FOREVERROGUEUI"] = function(msg)
         if addon.SetAuraLogging then addon.SetAuraLogging(true) end
     elseif msg == "auralog off" then
         if addon.SetAuraLogging then addon.SetAuraLogging(false) end
-    elseif msg == "misslog on" then
-        if addon.SetMissLogging then addon.SetMissLogging(true) end
-    elseif msg == "misslog off" then
-        if addon.SetMissLogging then addon.SetMissLogging(false) end
     elseif msg == "combo" then
         if addon.DebugComboPoints then addon.DebugComboPoints() end
     elseif msg == "atlases" then
         if addon.DebugComboAtlases then addon.DebugComboAtlases() end
     else
-        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env, /frui auras <unit> <filter>, /frui auralog on|off, /frui misslog on|off, /frui combo, /frui atlases")
+        print("ForeverRogue UI commands: /frui unlock, /frui lock, /frui reset, /frui scale <n>, /frui debug <spell name>, /frui env, /frui auras <unit> <filter>, /frui auralog on|off, /frui combo, /frui atlases")
     end
 end
 

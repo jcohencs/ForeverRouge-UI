@@ -340,32 +340,6 @@ function addon.SetAuraLogging(enabled)
     print("ForeverRogue UI: aura logging " .. (enabled and "ON - watch chat as you apply things." or "OFF") .. ".")
 end
 
--- Debug helper: /frui misslog on|off - raw listener for the exact
--- chat events the miss-detection workaround in Tracker.lua depends
--- on, to check whether they're actually firing (and with what text)
--- now that Core.lua force-enables their message group at login, or
--- whether that force-enable isn't actually taking effect on this
--- server.
-local missLogFrame
-local missLogEnabled = false
-
-function addon.SetMissLogging(enabled)
-    missLogEnabled = enabled
-
-    if enabled and not missLogFrame then
-        missLogFrame = CreateFrame("Frame")
-        addon.SafeRegisterEvent(missLogFrame, "CHAT_MSG_SPELL_SELF_MISSES")
-        addon.SafeRegisterEvent(missLogFrame, "CHAT_MSG_COMBAT_SELF_MISSES")
-        addon.SafeRegisterEvent(missLogFrame, "CHAT_MSG_SPELL_SELF_DAMAGE")
-        addon.SafeRegisterEvent(missLogFrame, "CHAT_MSG_COMBAT_SELF_HITS")
-        missLogFrame:SetScript("OnEvent", function(_, event, message)
-            if not missLogEnabled then return end
-            print(("ForeverRogue UI miss-log: [%s] %s"):format(event, tostring(message)))
-        end)
-    end
-
-    print("ForeverRogue UI: miss logging " .. (enabled and "ON - watch chat as you attack something." or "OFF") .. ".")
-end
 
 
 -- Debug helper: /frui env prints which spellbook/cooldown APIs this
