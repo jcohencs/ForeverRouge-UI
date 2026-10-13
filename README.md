@@ -205,23 +205,29 @@ If you'd rather have the addon draw its own resource bars instead,
 check **"Use addon combo bar (instead of Blizzard's)"** in the Options
 panel — this brings up both the addon's energy bar and its combo point
 bar together (the combo bar centered directly below the energy bar),
-and turns Blizzard's own display off at the same time (unchecking it
-turns Blizzard's back on and hides the addon's energy/combo bars
-again), so only one pair is ever shown. The ability tracker row keeps
-showing regardless of this choice either way - it only changes which
-resource/combo display is active, and the tracker re-anchors itself to
-match. Turning Blizzard's off is a two-part fix: the CVar alone didn't
-actually hide its health/power
-bar, so the addon also directly `:Hide()`s that frame and keeps
-re-hiding it if something tries to show it again (it gets re-shown on
-things like entering combat regardless of the CVar).
+and turns Blizzard's own display off via the `nameplateShowSelf` CVar
+at the same time (unchecking it turns Blizzard's back on and hides the
+addon's energy/combo bars again), so only one is meant to be shown.
+The ability tracker row keeps showing regardless of this choice either
+way - it only changes which resource/combo display is active, and the
+tracker re-anchors itself to match.
 
-**That checkbox is blocked while you're in combat** - switching it
-touches Blizzard's protected Personal Resource Display frame, which
-isn't allowed mid-fight and left things half-applied when tried
-in-game. Clicking it in combat reverts the checkbox and prints a
-message instead; the setting also re-applies itself once combat ends,
-in case a switch was attempted right as combat started.
+**The CVar is the only lever available here** - directly `:Hide()`ing
+Blizzard's Personal Resource Display frame was tried too, to cover
+cases where the CVar alone doesn't fully hide its health/power bar,
+but that's not actually possible: it's a protected frame, and calling
+`:Hide()`/`:Show()` on it from an addon throws "this action is only
+available to the Blizzard UI" - confirmed in-game, and not just a
+combat-lockdown restriction, so there's no workaround for it. If
+Blizzard's health/power bar still shows a sliver even with the addon
+bar checked, that's this limitation, not a bug to report.
+
+**That checkbox is also blocked while you're in combat** - the CVar
+it sets may itself be combat-protected, and switching mid-fight left
+things half-applied when tried in-game. Clicking it in combat reverts
+the checkbox and prints a message instead; the setting also
+re-applies itself once combat ends, in case a switch was attempted
+right as combat started.
 
 Custom circular
 art, tinting the game's own combo point atlas (`UI-RogueCP-Slash-Blue`,

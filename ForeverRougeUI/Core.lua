@@ -36,19 +36,18 @@ function addon.ApplyHUDVisibility()
 end
 
 -- Exactly one combo display at a time: when the addon's own bar is
--- enabled, turn Blizzard's Personal Resource Display off so they never
--- show stacked on top of each other; when it's disabled, turn
--- Blizzard's back on so combo points still show by default.
+-- enabled, turn Blizzard's Personal Resource Display off via the
+-- nameplateShowSelf CVar so they don't both show; when it's disabled,
+-- turn Blizzard's back on so combo points still show by default.
 --
--- The nameplateShowSelf CVar alone turned out not to be enough - the
--- frame (health/power bar included, not just the combo pips) kept
--- showing anyway. So on top of the CVar, directly :Hide() the frame,
--- and hook it so it can't be re-shown out from under us: this server's
--- own code (or Blizzard's) re-:Show()s it on combat/target-change
--- events regardless of the CVar, so the hook re-hides it every time
--- that happens for as long as the addon bar is the active choice.
-local hookedPersonalResourceDisplay = false
-
+-- Directly calling :Hide()/:Show() on PersonalResourceDisplayFrame
+-- (tried previously, to work around the CVar alone not fully hiding
+-- its health/power bar) is NOT an option - confirmed in-game, it's a
+-- protected frame and addons get "this action is only available to
+-- the Blizzard UI" even outside combat, not just a combat-lockdown
+-- restriction. SetCVar is the only lever available from here; if that
+-- alone doesn't fully hide Blizzard's health/power bar, there's
+-- currently no addon-side way to force the rest of it away.
 function addon.ApplyComboBarChoice()
     local db = addon.GetDB()
     local wantBlizzardOn = not db.showComboPoints
@@ -59,22 +58,6 @@ function addon.ApplyComboBarChoice()
             pcall(SetCVar, "nameplateShowSelf", "1")
         elseif not wantBlizzardOn and isOn then
             pcall(SetCVar, "nameplateShowSelf", "0")
-        end
-    end
-
-    if PersonalResourceDisplayFrame then
-        if not hookedPersonalResourceDisplay then
-            hookedPersonalResourceDisplay = true
-            PersonalResourceDisplayFrame:HookScript("OnShow", function(self)
-                if addon.GetDB().showComboPoints then
-                    self:Hide()
-                end
-            end)
-        end
-        if wantBlizzardOn then
-            pcall(PersonalResourceDisplayFrame.Show, PersonalResourceDisplayFrame)
-        else
-            pcall(PersonalResourceDisplayFrame.Hide, PersonalResourceDisplayFrame)
         end
     end
 
@@ -117,12 +100,11 @@ eventFrame:SetScript("OnEvent", function(_, event)
         return
     end
 
-    -- Switching combo bars (SetCVar + Hide/Show on Blizzard's protected
-    -- Personal Resource Display frame) is blocked by the Options panel
-    -- checkbox while in combat (see comboCheckbox below) - but just in
-    -- case a switch was attempted right as combat started and only
-    -- partially applied, reconcile it once combat actually ends, when
-    -- those calls are safe again.
+    -- Switching combo bars (SetCVar on a possibly combat-protected
+    -- CVar) is blocked by the Options panel checkbox while in combat
+    -- (see comboCheckbox below) - but just in case a switch was
+    -- attempted right as combat started and only partially applied,
+    -- reconcile it once combat actually ends, when that's safe again.
     if event == "PLAYER_REGEN_ENABLED" then
         if addon.IsPlayerRogue() and addon.ApplyComboBarChoice then
             addon.ApplyComboBarChoice()
@@ -308,11 +290,11 @@ local function CreateOptionsPanel()
     comboCheckbox:SetPoint("TOPLEFT", resetButton, "BOTTOMLEFT", -4, -24)
     comboCheckbox.Text:SetText("Use addon combo bar (instead of Blizzard's)")
     comboCheckbox:SetScript("OnClick", function(self)
-        -- Switching disables/enables Blizzard's protected Personal
-        -- Resource Display frame (SetCVar + Hide/Show), which isn't
-        -- allowed while in combat - confirmed in-game: switching mid-
-        -- fight left things in a half-applied state. Block it here and
-        -- revert the checkbox visually instead of silently failing.
+        -- Switching sets a CVar that may itself be combat-protected,
+        -- which isn't allowed while in combat - confirmed in-game:
+        -- switching mid-fight left things in a half-applied state.
+        -- Block it here and revert the checkbox visually instead of
+        -- silently failing.
         if InCombatLockdown and InCombatLockdown() then
             self:SetChecked(not self:GetChecked())
             print("ForeverRogue UI: can't switch combo bars during combat - try again once combat ends.")
