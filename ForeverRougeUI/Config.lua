@@ -61,7 +61,6 @@ addon.defaults = {
             "Adrenaline Rush",
             "Shadowstep",
             "Preparation",
-            "Eureka!",
         },
 
         -- Blizzard seals the real cooldown for some abilities (at least
@@ -85,11 +84,15 @@ addon.defaults = {
             Preparation = 300,
             -- Eureka! is the Gnome racial on WoW Forever ("your next 3
             -- non-periodic abilities cost 10% less and deal 10% more
-            -- damage") - confirmed 2-minute cooldown. The exclamation
-            -- mark is part of the real spell name - without it the
-            -- name never matches anything in the spellbook, which is
-            -- why it never showed up before.
-            ["Eureka!"] = 120,
+            -- damage") - lives in playerBuffs below, not here, since
+            -- what matters on the HUD is its 15-second buff duration
+            -- (with 3 charges, see the charge-coloring note there), not
+            -- its separate 2-minute reuse cooldown. This fallback is
+            -- the buff duration too, for the same reason Blade Flurry's
+            -- is below. The exclamation mark is part of the real spell
+            -- name - without it the name never matches anything in the
+            -- spellbook, which is why it never showed up before.
+            ["Eureka!"] = 15,
             -- Rupture's real duration scales with combo points spent
             -- (see comboScaledDurations below, which takes priority) -
             -- this flat value is never actually used, just a safety net.
@@ -144,14 +147,22 @@ addon.defaults = {
         },
 
         -- Buffs on yourself - same idea, read from your own auras.
-        -- Evasion/Sprint live here (not in cooldowns above) because you
-        -- want to see their active buff duration, not their full reuse
-        -- cooldown.
+        -- Evasion/Sprint/Eureka! live here (not in cooldowns above)
+        -- because you want to see their active buff duration, not
+        -- their full reuse cooldown. Eureka! also stacks up to 3
+        -- charges (consumed one per non-periodic ability/spell) - its
+        -- countdown text tints green/yellow/red as charges go from
+        -- 3/2/1, same as any other aura with charge data (see
+        -- ApplyChargeColor in Tracker.lua). It disappears on its own
+        -- once the last charge is consumed or the 15s runs out,
+        -- whichever comes first - same as any other buff here, no
+        -- special-casing needed.
         playerBuffs = {
             "Blade Flurry",
             "Slice and Dice",
             "Evasion",
             "Sprint",
+            "Eureka!",
         },
 
         -- Left-to-right priority order among whichever abilities are

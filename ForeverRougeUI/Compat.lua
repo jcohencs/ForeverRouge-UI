@@ -199,21 +199,23 @@ function addon.GetSpellIconTexture(name)
     return nil
 end
 
--- Returns name, icon, duration, expirationTime, source for the aura at
--- a given index on a unit, regardless of whether this client exposes
--- the old UnitAura() global or only the newer C_UnitAuras namespace.
+-- Returns name, icon, duration, expirationTime, source, charges for the
+-- aura at a given index on a unit, regardless of whether this client
+-- exposes the old UnitAura() global or only the newer C_UnitAuras
+-- namespace. charges is the stack/application count (e.g. Eureka!'s 3
+-- charges) - nil for auras that don't stack.
 function addon.GetUnitAuraByIndex(unit, index, filter)
     if type(UnitAura) == "function" then
-        local ok, name, icon, _, _, duration, expirationTime, source = pcall(UnitAura, unit, index, filter)
+        local ok, name, icon, count, _, duration, expirationTime, source = pcall(UnitAura, unit, index, filter)
         if ok and name then
-            return name, icon, duration, expirationTime, source
+            return name, icon, duration, expirationTime, source, count
         end
     end
 
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
         local ok, data = pcall(C_UnitAuras.GetAuraDataByIndex, unit, index, filter)
         if ok and data then
-            return data.name, data.icon, data.duration, data.expirationTime, data.sourceUnit
+            return data.name, data.icon, data.duration, data.expirationTime, data.sourceUnit, data.applications
         end
     end
 

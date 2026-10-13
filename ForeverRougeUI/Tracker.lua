@@ -48,7 +48,25 @@ end
 
 local function HideIcon(iconFrame)
     iconFrame.text:SetText("")
+    iconFrame.text:SetTextColor(1, 1, 1)
     iconFrame:Hide()
+end
+
+-- For auras that stack/charge (e.g. Eureka!'s 3 charges) - tints the
+-- countdown text green while full, yellow with one charge consumed,
+-- red on the last charge, so it's obvious at a glance how many uses
+-- are left without having to read the number. Auras with no charge
+-- info just stay the default white.
+local function ApplyChargeColor(iconFrame, charges)
+    if not charges or charges <= 0 then
+        iconFrame.text:SetTextColor(1, 1, 1)
+    elseif charges >= 3 then
+        iconFrame.text:SetTextColor(0.2, 0.9, 0.2)
+    elseif charges == 2 then
+        iconFrame.text:SetTextColor(1, 0.85, 0.1)
+    else
+        iconFrame.text:SetTextColor(1, 0.2, 0.2)
+    end
 end
 
 -- ---------------------------------------------------------------------
@@ -182,16 +200,16 @@ end
 local function FindAura(unit, name, filter)
     name = name:lower()
     for i = 1, 40 do
-        local auraName, icon, duration, expirationTime, source = addon.GetUnitAuraByIndex(unit, i, filter)
+        local auraName, icon, duration, expirationTime, source, charges = addon.GetUnitAuraByIndex(unit, i, filter)
         if not auraName then
             -- The read API is flaky - retry once immediately before
             -- concluding the list actually ends here, so one bad read
             -- doesn't wipe out every aura after it in this same scan.
-            auraName, icon, duration, expirationTime, source = addon.GetUnitAuraByIndex(unit, i, filter)
+            auraName, icon, duration, expirationTime, source, charges = addon.GetUnitAuraByIndex(unit, i, filter)
             if not auraName then break end
         end
         if auraName:lower() == name and (filter == "HELPFUL" or source == "player" or source == nil) then
-            return icon, duration, expirationTime
+            return icon, duration, expirationTime, charges
         end
     end
     return nil
@@ -214,6 +232,9 @@ end
 
 local function ShowFromCastFallback(iconFrame, remaining)
     iconFrame:Show()
+    -- No charge data available from a self-timed guess - don't leave a
+    -- stale charge color from before the live read dropped out.
+    iconFrame.text:SetTextColor(1, 1, 1)
     iconFrame.text:SetText(FormatTime(remaining))
 end
 
@@ -234,13 +255,15 @@ local function UpdateAuraIcon(iconFrame)
     local targetGone = unit == "target" and not UnitExists("target")
 
     if not targetGone then
-        local icon, duration, expirationTime = FindAura(unit, iconFrame.spellName, filter)
+        local icon, duration, expirationTime, charges = FindAura(unit, iconFrame.spellName, filter)
         if icon then
             iconFrame.lastSeenTime = GetTime()
+            iconFrame.lastKnownCharges = charges
             iconFrame:Show()
             if iconFrame.texture:GetTexture() ~= icon then
                 iconFrame.texture:SetTexture(icon)
             end
+            ApplyChargeColor(iconFrame, charges)
 
             if duration and duration > 0 and expirationTime then
                 iconFrame.lastKnownExpiration = expirationTime
@@ -270,6 +293,7 @@ local function UpdateAuraIcon(iconFrame)
                 local remaining = iconFrame.lastKnownExpiration - GetTime()
                 if remaining > 0 then
                     iconFrame:Show()
+                    ApplyChargeColor(iconFrame, iconFrame.lastKnownCharges)
                     iconFrame.text:SetText(FormatTime(remaining))
                     return
                 end
@@ -284,6 +308,7 @@ local function UpdateAuraIcon(iconFrame)
 
     iconFrame.lastSeenTime = nil
     iconFrame.lastKnownExpiration = nil
+    iconFrame.lastKnownCharges = nil
 
     -- No live data available at all (this server may hide enemy debuff
     -- durations from addons the same way it seals some cooldowns) - use

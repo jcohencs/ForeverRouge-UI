@@ -78,7 +78,6 @@ tracker = {
     cooldowns = {       -- true ability reuse cooldowns
         "Kick", "Blind",
         "Cloak of Shadows", "Adrenaline Rush", "Shadowstep", "Preparation",
-        "Eureka!", -- Gnome racial on WoW Forever
     },
     targetDebuffs = {   -- things you put on your target
         "Rupture", "Expose Armor", "Garrote", "Kidney Shot", "Gouge",
@@ -88,6 +87,7 @@ tracker = {
         "Slice and Dice",
         "Evasion",
         "Sprint",
+        "Eureka!", -- Gnome racial on WoW Forever
     },
 },
 ```
@@ -103,9 +103,16 @@ tracker = {
   Gouge/Kidney Shot never read live here), so if that comes back empty
   it falls back to a self-timed estimate from `fallbackDurations`
   instead, same idea as the sealed-cooldown fallback below.
-- **playerBuffs**: same idea, for buffs on yourself. Evasion and Sprint
-  live here rather than in `cooldowns`, so you see their active buff
-  duration instead of their (much longer) full reuse cooldown.
+- **playerBuffs**: same idea, for buffs on yourself. Evasion, Sprint,
+  and Eureka! live here rather than in `cooldowns`, so you see their
+  active buff duration instead of their (much longer) full reuse
+  cooldown. For an aura that stacks charges, like Eureka! (3 charges,
+  one consumed per non-periodic ability/spell while it's up), the
+  countdown text itself tints green → yellow → red as charges go from
+  3 → 2 → 1, so you can see at a glance how many uses are left without
+  reading the number; it disappears on its own once the last charge is
+  used or the duration runs out, whichever comes first, same as any
+  other buff here.
 
 Move an ability between these three lists if it's being tracked the
 wrong way — e.g. if something is really an effect you apply rather than
