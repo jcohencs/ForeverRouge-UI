@@ -78,7 +78,7 @@ tracker = {
     cooldowns = {       -- true ability reuse cooldowns
         "Kick", "Blind",
         "Cloak of Shadows", "Adrenaline Rush", "Shadowstep", "Preparation",
-        "Eureka", -- WoW Forever racial, not a stock Blizzard ability
+        "Eureka!", -- Gnome racial on WoW Forever
     },
     targetDebuffs = {   -- things you put on your target
         "Rupture", "Expose Armor", "Garrote", "Kidney Shot", "Gouge",
