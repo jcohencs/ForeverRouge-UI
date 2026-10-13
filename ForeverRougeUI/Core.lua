@@ -56,6 +56,21 @@ eventFrame:SetScript("OnEvent", function(_, event)
     end
     frame:Show()
 
+    -- This addon's default combo display is Blizzard's own Personal
+    -- Resource Display (Options > Combat > "Personal Resource
+    -- Display", CVar nameplateShowSelf) - turn it on if the player has
+    -- it off, so combo points actually show up by default rather than
+    -- silently depending on a client setting this addon doesn't touch
+    -- otherwise. Only forces it on, never off, and only once per
+    -- session (not on every PLAYER_ENTERING_WORLD) so it doesn't fight
+    -- someone who deliberately turns it back off mid-session.
+    if not addon.forcedPersonalResourceDisplay then
+        addon.forcedPersonalResourceDisplay = true
+        if GetCVar and GetCVar("nameplateShowSelf") == "0" then
+            pcall(SetCVar, "nameplateShowSelf", "1")
+        end
+    end
+
     -- Order matters: the tracker row anchors above the energy bar.
     -- Combo points use Blizzard's own Personal Resource Display by
     -- default, but the addon's own combo bar can be enabled instead in

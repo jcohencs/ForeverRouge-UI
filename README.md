@@ -158,7 +158,12 @@ energy bar sits in its own fixed spot on the addon's frame regardless.
 ## Combo points
 
 By default, shown via Blizzard's own **Personal Resource Display**
-above your character, not drawn by this addon. If you want it
+above your character, not drawn by this addon. That display is
+controlled by a client setting (Options → Combat → "Personal Resource
+Display") — this addon automatically turns it on for you once per
+session if you had it off, since combo points wouldn't show up
+otherwise. It only ever turns it on, never off, so turning it back off
+yourself in Options sticks for the rest of that session. If you want it
 positioned differently (e.g. nearer this HUD), use **Edit Mode** (Esc
 → Edit Mode) to drag it — that's the supported way to move it, since
 Edit Mode re-applies its own saved position on every login and would
