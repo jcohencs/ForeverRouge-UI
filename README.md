@@ -107,22 +107,26 @@ tracker = {
   and Eureka! live here rather than in `cooldowns`, so you see their
   active buff duration instead of their (much longer) full reuse
   cooldown. For an aura that stacks charges, like Eureka! (3 charges,
-  one consumed per non-periodic damaging/healing ability or spell
-  while it's up - not utility casts like Kick or Sprint, and not DoT
-  ticks), the countdown text itself tints green → yellow → red as
-  charges go from 3 → 2 → 1, so you can see at a glance how many uses
-  are left without reading the number; it disappears on its own once
-  the last charge is used or the duration runs out, whichever comes
-  first.
+  one consumed per non-periodic damaging ability while it's up), the
+  countdown text itself tints green → yellow → red as charges go from
+  3 → 2 → 1, so you can see at a glance how many uses are left without
+  reading the number; it disappears on its own once the last charge is
+  used or the duration runs out, whichever comes first.
 
   This server seals buff aura data while you're in combat (confirmed
   in-game: reading Eureka!'s aura mid-fight throws "Auras cannot be
   accessed when secret"), which is exactly when its charges matter -
   so the real remaining-charges count can't be read live at that
-  point. The addon counts your own qualifying combat log hits itself
-  instead (`SPELL_DAMAGE`/`SPELL_HEAL`, excluding periodic ticks and
-  non-damaging casts), starting over at 3 each time the buff is
-  (re)applied. `tracker.chargeCounts` in `Config.lua` is where that's
+  point. The addon counts charges itself instead: casting any ability
+  that isn't one of this addon's own tracked abilities (i.e. not a
+  utility/CC/buff cast like Kick or Sprint - everything in
+  `cooldowns`/`targetDebuffs`/`playerBuffs` is one of those, so
+  anything else successfully cast is treated as a real attack) eats
+  one charge, starting over at 3 each time the buff is (re)applied.
+  This is a local approximation, not a read of real damage events, so
+  it's not pixel-perfect, but it's simple and doesn't depend on
+  anything that could trip this server's other restrictions.
+  `tracker.chargeCounts` in `Config.lua` is where the charge count is
   configured per ability, in case a future charge-based ability needs
   the same treatment.
 

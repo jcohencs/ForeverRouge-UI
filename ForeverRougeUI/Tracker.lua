@@ -169,9 +169,31 @@ local function GetMaxCharges(spellName)
     return db.chargeCounts and db.chargeCounts[spellName]
 end
 
+-- Consumes a charge from every charge-tracked icon that's currently
+-- active, except the one that was just cast (casting Eureka! itself
+-- shouldn't consume its own charge). Once charges hit 0, the icon
+-- disappears immediately rather than waiting out the rest of the
+-- duration.
+local function ConsumeCharge(excludeIconFrame)
+    for _, iconFrame in ipairs(icons) do
+        if iconFrame ~= excludeIconFrame and iconFrame.selfTrackedCharges and iconFrame.selfTrackedCharges > 0 then
+            iconFrame.selfTrackedCharges = iconFrame.selfTrackedCharges - 1
+            if iconFrame.selfTrackedCharges <= 0 then
+                -- Also clear the cast-fallback timer, or the next tick's
+                -- UpdateAuraIcon would just re-show it from that.
+                iconFrame.castFallbackStart = nil
+                HideIcon(iconFrame)
+            end
+        end
+    end
+end
+
 local function OnSpellCastSucceeded(spellID)
+    local matchedIconFrame = nil
+
     for _, iconFrame in ipairs(icons) do
         if iconFrame.spellID == spellID then
+            matchedIconFrame = iconFrame
             if iconFrame.kind == "cooldown" and iconFrame.secretMode then
                 local duration = GetFallbackDuration(iconFrame.spellName)
                 if duration then
@@ -195,10 +217,8 @@ local function OnSpellCastSucceeded(spellID)
                 end
 
                 -- (Re)arm the self-tracked charge count too, for
-                -- abilities like Eureka! - see ConsumeChargeIfDamaging
-                -- below for why this is tracked ourselves instead of
-                -- read live, and why it's driven by the combat log
-                -- rather than from here.
+                -- abilities like Eureka! - see ConsumeCharge above for
+                -- why this is tracked ourselves instead of read live.
                 local maxCharges = GetMaxCharges(iconFrame.spellName)
                 if maxCharges then
                     iconFrame.selfTrackedCharges = maxCharges
@@ -206,59 +226,26 @@ local function OnSpellCastSucceeded(spellID)
             end
         end
     end
-end
 
--- Consumes a charge from every charge-tracked icon that's currently
--- active, except the one that was just cast (casting Eureka! itself
--- shouldn't consume its own charge). Only called for a non-periodic
--- SPELL_DAMAGE/SPELL_HEAL combat log event from the player - *not*
--- from every successful cast - since the real ability only consumes a
--- charge on a non-periodic damaging/healing ability or spell, not on
--- utility casts like Kick or Sprint (confirmed in-game: it was wrongly
--- going down on every cast before this). This server seals buff aura
--- data while in combat (confirmed: reading Eureka!'s aura mid-fight
--- throws "Auras cannot be accessed when secret"), so there's no way to
--- read the real remaining charges live during the exact time it
--- matters - counting qualifying combat log events ourselves is the
--- only option. Once charges hit 0, the icon disappears immediately
--- rather than waiting out the rest of the duration.
-local function ConsumeCharge(excludeIconFrame)
-    for _, iconFrame in ipairs(icons) do
-        if iconFrame ~= excludeIconFrame and iconFrame.selfTrackedCharges and iconFrame.selfTrackedCharges > 0 then
-            iconFrame.selfTrackedCharges = iconFrame.selfTrackedCharges - 1
-            if iconFrame.selfTrackedCharges <= 0 then
-                -- Also clear the cast-fallback timer, or the next tick's
-                -- UpdateAuraIcon would just re-show it from that.
-                iconFrame.castFallbackStart = nil
-                HideIcon(iconFrame)
-            end
-        end
+    -- Consume a charge on any cast that ISN'T one of this addon's own
+    -- tracked abilities - every ability in tracker.cooldowns/
+    -- targetDebuffs/playerBuffs is utility/CC/a buff, not direct
+    -- damage, so anything else successfully cast is a real attack and
+    -- should eat a charge. This is a local approximation (it's not
+    -- reading damage events at all, just "was this one of our own
+    -- tracked spells") rather than consulting the combat log - this
+    -- server seals buff aura data during combat anyway (confirmed:
+    -- reading Eureka!'s aura mid-fight throws "Auras cannot be
+    -- accessed when secret"), so there's no way to read the real
+    -- remaining charges live right when it matters, and the combat-log
+    -- approach tried first turned out not worth the extra moving
+    -- parts. Not perfectly accurate (a non-damaging cast that isn't
+    -- tracked, or a periodic tick re-triggering nothing here anyway,
+    -- would still miss/eat a charge differently than the real
+    -- ability), but close enough without the complexity.
+    if not matchedIconFrame then
+        ConsumeCharge(nil)
     end
-end
-
--- A single non-periodic ability can still log more than one
--- SPELL_DAMAGE/SPELL_HEAL line in one go (cleave/AOE hitting several
--- targets, a damage line plus a separate SPELL_ABSORBED, etc.) - that's
--- still only *one* use of the ability, so de-duplicate by spellId
--- within a short window rather than consuming a charge per hit.
-local lastChargeConsumeTime = {}
-local CHARGE_DEDUPE_WINDOW = 0.3
-
-local function ConsumeChargeIfDamaging(subevent, sourceGUID, spellId)
-    if sourceGUID ~= UnitGUID("player") then return end
-    if subevent ~= "SPELL_DAMAGE" and subevent ~= "SPELL_HEAL" then return end
-
-    local now = GetTime()
-    if lastChargeConsumeTime[spellId] and (now - lastChargeConsumeTime[spellId]) < CHARGE_DEDUPE_WINDOW then
-        return
-    end
-    lastChargeConsumeTime[spellId] = now
-
-    -- The spell that just dealt damage/healing is never itself a
-    -- charge-tracked icon (those are all utility/CC, not damage), so
-    -- there's nothing to exclude here the way OnSpellCastSucceeded
-    -- excludes the ability that was just cast.
-    ConsumeCharge(nil)
 end
 
 -- ---------------------------------------------------------------------
@@ -624,7 +611,6 @@ function addon.InitTracker()
     addon.SafeRegisterEvent(watcher, "SPELL_UPDATE_COOLDOWN")
     addon.SafeRegisterEvent(watcher, "PLAYER_ENTERING_WORLD")
     addon.SafeRegisterEvent(watcher, "PLAYER_TARGET_CHANGED")
-    addon.SafeRegisterEvent(watcher, "COMBAT_LOG_EVENT_UNFILTERED")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_SPELLCAST_SUCCEEDED", "player")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "target")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "player")
@@ -637,11 +623,6 @@ function addon.InitTracker()
             OnTargetChanged()
         elseif event == "UNIT_POWER_UPDATE" or event == "UNIT_POWER_FREQUENT" then
             TrackComboPoints()
-        elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-            -- The real combat log fields aren't passed as event args -
-            -- have to ask for them separately.
-            local _, subevent, _, sourceGUID, _, _, _, _, _, _, _, spellId = CombatLogGetCurrentEventInfo()
-            ConsumeChargeIfDamaging(subevent, sourceGUID, spellId)
         end
         UpdateAll()
     end)
