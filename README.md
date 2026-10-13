@@ -78,6 +78,7 @@ tracker = {
     cooldowns = {       -- true ability reuse cooldowns
         "Kick", "Blind",
         "Cloak of Shadows", "Adrenaline Rush", "Shadowstep", "Preparation",
+        "Eureka", -- WoW Forever racial, not a stock Blizzard ability
     },
     targetDebuffs = {   -- things you put on your target
         "Rupture", "Expose Armor", "Garrote", "Kidney Shot", "Gouge",
@@ -194,7 +195,16 @@ match. Turning Blizzard's off is a two-part fix: the CVar alone didn't
 actually hide its health/power
 bar, so the addon also directly `:Hide()`s that frame and keeps
 re-hiding it if something tries to show it again (it gets re-shown on
-things like entering combat regardless of the CVar). Custom circular
+things like entering combat regardless of the CVar).
+
+**That checkbox is blocked while you're in combat** - switching it
+touches Blizzard's protected Personal Resource Display frame, which
+isn't allowed mid-fight and left things half-applied when tried
+in-game. Clicking it in combat reverts the checkbox and prints a
+message instead; the setting also re-applies itself once combat ends,
+in case a switch was attempted right as combat started.
+
+Custom circular
 art, tinting the game's own combo point atlas (`UI-RogueCP-Slash-Blue`,
 confirmed via `/framestack` as exactly what this client's Personal
 Resource Display itself uses) was tried first, but neither `:SetMask`

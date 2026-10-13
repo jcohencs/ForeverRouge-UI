@@ -61,6 +61,7 @@ addon.defaults = {
             "Adrenaline Rush",
             "Shadowstep",
             "Preparation",
+            "Eureka",
         },
 
         -- Blizzard seals the real cooldown for some abilities (at least
@@ -82,6 +83,11 @@ addon.defaults = {
             ["Adrenaline Rush"] = 180,
             Shadowstep = 20,
             Preparation = 300,
+            -- Eureka is a WoW Forever racial, not a stock Blizzard
+            -- ability - this duration is a guess (typical racial
+            -- cooldown length). Check the real one in-game and adjust
+            -- this if it's off.
+            Eureka = 120,
             -- Rupture's real duration scales with combo points spent
             -- (see comboScaledDurations below, which takes priority) -
             -- this flat value is never actually used, just a safety net.

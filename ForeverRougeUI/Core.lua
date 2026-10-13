@@ -98,6 +98,7 @@ addon.SafeRegisterEvent(eventFrame, "PLAYER_LOGIN")
 addon.SafeRegisterEvent(eventFrame, "PLAYER_ENTERING_WORLD")
 addon.SafeRegisterEvent(eventFrame, "SPELLS_CHANGED")
 addon.SafeRegisterEvent(eventFrame, "LEARNED_SPELL_IN_TAB")
+addon.SafeRegisterEvent(eventFrame, "PLAYER_REGEN_ENABLED")
 eventFrame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         addon.GetDB()
@@ -107,6 +108,19 @@ eventFrame:SetScript("OnEvent", function(_, event)
 
     if event == "SPELLS_CHANGED" or event == "LEARNED_SPELL_IN_TAB" then
         if addon.InvalidateSpellBookCache then addon.InvalidateSpellBookCache() end
+        return
+    end
+
+    -- Switching combo bars (SetCVar + Hide/Show on Blizzard's protected
+    -- Personal Resource Display frame) is blocked by the Options panel
+    -- checkbox while in combat (see comboCheckbox below) - but just in
+    -- case a switch was attempted right as combat started and only
+    -- partially applied, reconcile it once combat actually ends, when
+    -- those calls are safe again.
+    if event == "PLAYER_REGEN_ENABLED" then
+        if addon.IsPlayerRogue() and addon.ApplyComboBarChoice then
+            addon.ApplyComboBarChoice()
+        end
         return
     end
 
@@ -288,6 +302,16 @@ local function CreateOptionsPanel()
     comboCheckbox:SetPoint("TOPLEFT", resetButton, "BOTTOMLEFT", -4, -24)
     comboCheckbox.Text:SetText("Use addon combo bar (instead of Blizzard's)")
     comboCheckbox:SetScript("OnClick", function(self)
+        -- Switching disables/enables Blizzard's protected Personal
+        -- Resource Display frame (SetCVar + Hide/Show), which isn't
+        -- allowed while in combat - confirmed in-game: switching mid-
+        -- fight left things in a half-applied state. Block it here and
+        -- revert the checkbox visually instead of silently failing.
+        if InCombatLockdown and InCombatLockdown() then
+            self:SetChecked(not self:GetChecked())
+            print("ForeverRogue UI: can't switch combo bars during combat - try again once combat ends.")
+            return
+        end
         addon.GetDB().showComboPoints = self:GetChecked() and true or false
         addon.ApplyComboBarChoice()
         if addon.RefreshComboPointsVisibility then addon.RefreshComboPointsVisibility() end
