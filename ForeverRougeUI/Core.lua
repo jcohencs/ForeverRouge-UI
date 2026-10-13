@@ -29,19 +29,46 @@ local function ApplyLock()
 end
 
 -- Exactly one combo display at a time: when the addon's own bar is
--- enabled, turn Blizzard's Personal Resource Display off (CVar
--- nameplateShowSelf) so they never show stacked on top of each other;
--- when it's disabled, turn Blizzard's back on so combo points still
--- show by default.
+-- enabled, turn Blizzard's Personal Resource Display off so they never
+-- show stacked on top of each other; when it's disabled, turn
+-- Blizzard's back on so combo points still show by default.
+--
+-- The nameplateShowSelf CVar alone turned out not to be enough - the
+-- frame (health/power bar included, not just the combo pips) kept
+-- showing anyway. So on top of the CVar, directly :Hide() the frame,
+-- and hook it so it can't be re-shown out from under us: this server's
+-- own code (or Blizzard's) re-:Show()s it on combat/target-change
+-- events regardless of the CVar, so the hook re-hides it every time
+-- that happens for as long as the addon bar is the active choice.
+local hookedPersonalResourceDisplay = false
+
 function addon.ApplyComboBarChoice()
-    if not GetCVar or not SetCVar then return end
     local db = addon.GetDB()
     local wantBlizzardOn = not db.showComboPoints
-    local isOn = GetCVar("nameplateShowSelf") == "1"
-    if wantBlizzardOn and not isOn then
-        pcall(SetCVar, "nameplateShowSelf", "1")
-    elseif not wantBlizzardOn and isOn then
-        pcall(SetCVar, "nameplateShowSelf", "0")
+
+    if GetCVar and SetCVar then
+        local isOn = GetCVar("nameplateShowSelf") == "1"
+        if wantBlizzardOn and not isOn then
+            pcall(SetCVar, "nameplateShowSelf", "1")
+        elseif not wantBlizzardOn and isOn then
+            pcall(SetCVar, "nameplateShowSelf", "0")
+        end
+    end
+
+    if PersonalResourceDisplayFrame then
+        if not hookedPersonalResourceDisplay then
+            hookedPersonalResourceDisplay = true
+            PersonalResourceDisplayFrame:HookScript("OnShow", function(self)
+                if addon.GetDB().showComboPoints then
+                    self:Hide()
+                end
+            end)
+        end
+        if wantBlizzardOn then
+            pcall(PersonalResourceDisplayFrame.Show, PersonalResourceDisplayFrame)
+        else
+            pcall(PersonalResourceDisplayFrame.Hide, PersonalResourceDisplayFrame)
+        end
     end
 end
 

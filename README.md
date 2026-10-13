@@ -172,7 +172,11 @@ If you'd rather have the addon draw its own combo point bar instead,
 check **"Use addon combo bar (instead of Blizzard's)"** in the Options
 panel — it appears centered above the energy bar, and checking it
 automatically turns Blizzard's own display off (unchecking it turns
-Blizzard's back on), so only one is ever shown at a time. Custom
+Blizzard's back on), so only one is ever shown at a time. Turning
+Blizzard's off is a two-part fix: the CVar alone didn't actually hide
+its health/power bar, so the addon also directly `:Hide()`s that frame
+and keeps re-hiding it if something tries to show it again (it gets
+re-shown on things like entering combat regardless of the CVar). Custom
 circular art, tinting the game's own combo point atlas
 (`UI-RogueCP-Slash-Blue`, confirmed via `/framestack` as exactly what
 this client's Personal Resource Display itself uses) was tried first,
