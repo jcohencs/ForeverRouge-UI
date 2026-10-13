@@ -93,6 +93,24 @@ eventFrame:SetScript("OnEvent", function(_, event)
         addon.GetDB()
         ApplyPosition()
         ApplyLock()
+
+        -- Make sure the chat message types the miss-detection
+        -- workaround (Tracker.lua) depends on are actually turned on -
+        -- confirmed in-game: with "Self Misses" filtered out of the
+        -- combat log chat tab, the underlying CHAT_MSG_SPELL_SELF_
+        -- MISSES/CHAT_MSG_COMBAT_SELF_MISSES events never fired at all
+        -- on this server, not even for our own event registration (so
+        -- it's not just a display filter here - this server appears
+        -- to gate the events themselves on it). Turn the group on for
+        -- the main chat frame regardless of what the player has
+        -- configured, so the addon doesn't silently stop working if
+        -- someone has it filtered out (or never had it on to begin
+        -- with).
+        if ChatFrame_AddMessageGroup and ChatFrame1 then
+            for _, group in ipairs({ "COMBAT_SELF_MISSES", "COMBAT_SELF_HITS", "COMBAT_SELF_DAMAGE" }) do
+                pcall(ChatFrame_AddMessageGroup, ChatFrame1, group)
+            end
+        end
     end
 
     if event == "SPELLS_CHANGED" or event == "LEARNED_SPELL_IN_TAB" then
