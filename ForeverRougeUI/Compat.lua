@@ -271,11 +271,11 @@ function addon.DebugAuras(unit, filter)
 
     local count = 0
     for i = 1, 40 do
-        local name, _, duration, expirationTime, source = addon.GetUnitAuraByIndex(unit, i, filter)
+        local name, _, duration, expirationTime, source, charges = addon.GetUnitAuraByIndex(unit, i, filter)
         if not name then break end
         count = count + 1
-        print(("  [%d] '%s' source=%s duration=%s expirationTime=%s"):format(
-            i, name, tostring(source), tostring(duration), tostring(expirationTime)))
+        print(("  [%d] '%s' source=%s duration=%s expirationTime=%s charges=%s"):format(
+            i, name, tostring(source), tostring(duration), tostring(expirationTime), tostring(charges)))
     end
 
     if count == 0 then
