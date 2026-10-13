@@ -1,9 +1,10 @@
 # ForeverRogue UI
 
-A lightweight Rogue HUD addon for World of Warcraft Forever: energy
-bar, combo point pips, and a single tracker row — left-aligned to the
-energy bar, Slice and Dice always first — for cooldowns, your
-bleeds/CC on your target, and your own buffs.
+A lightweight Rogue HUD addon for World of Warcraft Forever: an energy
+bar and a single tracker row — left-aligned to the energy bar, Slice
+and Dice always first — for cooldowns, your bleeds/CC on your target,
+and your own buffs. Combo points aren't drawn by this addon; use
+Blizzard's own Personal Resource Display for those (see below).
 
 ## Install
 
@@ -145,18 +146,22 @@ differently than expected.
 
 ## Layout
 
-Top to bottom: the tracker row, energy bar, combo point pips. The
-tracker row and combo points both anchor off the energy bar, so
-resizing icons or the bar in `Config.lua` keeps everything aligned.
+Top to bottom: the tracker row, then the energy bar. The tracker row
+anchors off the energy bar, so resizing icons or the bar in
+`Config.lua` keeps everything aligned.
 
-## Combo point pips
+## Combo points
 
-Plain blue boxes — a faint always-visible background per slot, filled
-solid blue once that point is spent. Both circular art (a shipped
-custom texture) and the real Blizzard combo point atlas
-(`UI-RogueCP-Slash-Blue`, confirmed via `/framestack` as exactly what
-this client's own Personal Resource Display uses) were tried first, but
-neither `:SetMask` nor `:SetAtlas` actually renders anything on this
-client — both accept the call without erroring, but nothing shows.
-Plain `:SetColorTexture()` boxes are the one approach that's reliably
-rendered correctly here, so that's what's used.
+Shown via Blizzard's own **Personal Resource Display** above your
+character, not drawn by this addon. Custom circular art, tinting the
+game's own combo point atlas (`UI-RogueCP-Slash-Blue`, confirmed via
+`/framestack` as exactly what this client's Personal Resource Display
+itself uses), and plain colored boxes were all tried as a custom pip
+row first - but neither `:SetMask` nor `:SetAtlas` actually render
+anything on this client (both accept the call without erroring, but
+nothing shows), so using Blizzard's existing display turned out to be
+simplest. If you want it positioned differently (e.g. nearer this
+HUD), use **Edit Mode** (Esc → Edit Mode) to drag it — that's the
+supported way to move it, since Edit Mode re-applies its own saved
+position on every login and would fight any attempt by this addon to
+reposition it in code.
