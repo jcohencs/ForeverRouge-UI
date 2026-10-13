@@ -179,3 +179,9 @@ nor `:SetAtlas` actually render anything on this client (both accept
 the call without erroring, but nothing shows) - so the addon's bar
 uses plain colored boxes instead. It's a different style, not a
 reproduction of Blizzard's exact art.
+
+Even with that checkbox on, the addon's bar steps aside automatically
+whenever Blizzard's own Personal Resource Display is actually up
+on-screen (it only appears in combat/while targeting something, even
+though the setting itself is always on) - so the two never show
+stacked on top of each other.

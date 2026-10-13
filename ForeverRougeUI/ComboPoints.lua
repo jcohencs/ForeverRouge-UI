@@ -44,8 +44,17 @@ end
 
 local lastMax = 0
 
+-- Blizzard's Personal Resource Display only actually appears in
+-- combat/while targeting something, not just because the CVar is on -
+-- so even with our bar enabled, skip showing it whenever theirs is
+-- already up, rather than stacking both combo displays on screen at
+-- once.
+local function BlizzardBarIsUp()
+    return PersonalResourceDisplayFrame and PersonalResourceDisplayFrame:IsVisible()
+end
+
 local function Update()
-    local visible = addon.GetDB().showComboPoints
+    local visible = addon.GetDB().showComboPoints and not BlizzardBarIsUp()
     row:SetShown(visible)
     if not visible then return end
 
@@ -91,6 +100,14 @@ function addon.InitComboPoints()
     addon.SafeRegisterEvent(watcher, "PLAYER_TARGET_CHANGED")
     addon.SafeRegisterEvent(watcher, "PLAYER_ENTERING_WORLD")
     watcher:SetScript("OnEvent", Update)
+
+    -- React immediately to the Blizzard bar itself appearing/
+    -- disappearing (e.g. entering/leaving combat), not just to combo
+    -- point changes, so there's no brief overlap of both bars.
+    if PersonalResourceDisplayFrame then
+        PersonalResourceDisplayFrame:HookScript("OnShow", Update)
+        PersonalResourceDisplayFrame:HookScript("OnHide", Update)
+    end
 
     Update()
 end
