@@ -28,6 +28,16 @@ local function ApplyLock()
     frame:EnableMouse(not db.locked)
 end
 
+-- "Use addon combo bar" in the Options panel is really an all-or-
+-- nothing HUD switch: checked shows the whole addon (energy bar,
+-- tracker, combo bar) and uses our combo display; unchecked hides the
+-- whole addon and leaves Blizzard's Personal Resource Display as the
+-- only thing on screen. Still gated on actually being a Rogue.
+function addon.ApplyHUDVisibility()
+    local db = addon.GetDB()
+    frame:SetShown(addon.IsPlayerRogue() and db.showComboPoints)
+end
+
 -- Exactly one combo display at a time: when the addon's own bar is
 -- enabled, turn Blizzard's Personal Resource Display off so they never
 -- show stacked on top of each other; when it's disabled, turn
@@ -98,20 +108,18 @@ eventFrame:SetScript("OnEvent", function(_, event)
         frame:Hide()
         return
     end
-    frame:Show()
 
     -- Make sure the right combo display is on: Blizzard's Personal
-    -- Resource Display by default, or the addon's own bar if that's
+    -- Resource Display by default, or the addon's own HUD if that's
     -- been enabled in the Options panel - never both.
     addon.ApplyComboBarChoice()
 
     -- Order matters: the tracker row anchors above the energy bar.
-    -- Combo points use Blizzard's own Personal Resource Display by
-    -- default, but the addon's own combo bar can be enabled instead in
-    -- the Options panel.
     if addon.InitEnergy then addon.InitEnergy() end
     if addon.InitTracker then addon.InitTracker() end
     if addon.InitComboPoints then addon.InitComboPoints() end
+
+    addon.ApplyHUDVisibility()
 end)
 
 SLASH_FOREVERROGUEUI1 = "/frui"
@@ -259,17 +267,21 @@ local function CreateOptionsPanel()
         ApplyPosition()
     end)
 
-    -- Combo points default to Blizzard's own Personal Resource Display;
-    -- check this to show the addon's own bar instead (plain colored
-    -- boxes - Blizzard's exact combo point art doesn't actually render
-    -- on this client via SetAtlas/SetMask, both confirmed to be silent
-    -- no-ops here, so this is a different style, not a reproduction).
+    -- All-or-nothing HUD switch: unchecked (default) hides this addon
+    -- entirely and leaves Blizzard's own Personal Resource Display as
+    -- the only combo/resource display. Checked shows the whole addon
+    -- (energy bar, tracker, combo bar) and uses the addon's own combo
+    -- bar instead (plain colored boxes - Blizzard's exact combo point
+    -- art doesn't actually render on this client via SetAtlas/SetMask,
+    -- both confirmed to be silent no-ops here, so this is a different
+    -- style, not a reproduction).
     local comboCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
     comboCheckbox:SetPoint("TOPLEFT", resetButton, "BOTTOMLEFT", -4, -24)
-    comboCheckbox.Text:SetText("Use addon combo bar (instead of Blizzard's)")
+    comboCheckbox.Text:SetText("Show addon HUD (instead of Blizzard's resource display)")
     comboCheckbox:SetScript("OnClick", function(self)
         addon.GetDB().showComboPoints = self:GetChecked() and true or false
         addon.ApplyComboBarChoice()
+        addon.ApplyHUDVisibility()
         if addon.RefreshComboPointsVisibility then addon.RefreshComboPointsVisibility() end
     end)
 

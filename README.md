@@ -3,9 +3,15 @@
 A lightweight Rogue HUD addon for World of Warcraft Forever: an energy
 bar and a single tracker row — left-aligned to the energy bar, Slice
 and Dice always first — for cooldowns, your bleeds/CC on your target,
-and your own buffs. Combo points use Blizzard's own Personal Resource
-Display by default, with an optional addon-drawn combo bar you can
-switch on in the Options panel (see below).
+and your own buffs, plus an optional combo point bar.
+
+**The whole HUD is off by default.** Out of the box, this addon shows
+nothing - you just get Blizzard's own Personal Resource Display for
+combo points, same as if the addon weren't installed. Check **"Show
+addon HUD"** in the Options panel (see below) to turn on the energy
+bar, tracker row, and the addon's own combo bar together; unchecking
+it goes back to Blizzard's display only, with the addon HUD hidden
+entirely.
 
 ## Install
 
@@ -30,21 +36,21 @@ version 1.60.1).
 
 ## Usage
 
-The HUD appears automatically for Rogue characters, centered a bit below
-the middle of the screen. Drag it into place:
+Open the game menu (Esc) → Options → AddOns (or Interface → AddOns on
+older clients) → **ForeverRogue UI** and check **"Show addon HUD
+(instead of Blizzard's resource display)"** — the HUD then appears for
+Rogue characters, centered a bit below the middle of the screen. The
+same panel also has a scale slider, a lock checkbox, a reset button,
+and — per tracked ability — a checkbox to turn it off entirely plus
+`^`/`v` buttons to move it earlier/later in the row. Reordering there
+takes effect immediately and is remembered across sessions.
+
+Once it's showing, drag it into place:
 
 - `/frui unlock` — unlock the frame so you can drag it
 - `/frui lock` — lock it back in place
 - `/frui reset` — reset position to default
 - `/frui scale 1.2` — resize the whole HUD
-
-Or use the in-game Options panel instead of slash commands: open the
-game menu (Esc) → Options → AddOns (or Interface → AddOns on older
-clients) → **ForeverRogue UI**, for a scale slider, a lock checkbox, a
-reset button, and — per tracked ability — a checkbox to turn it off
-entirely plus `^`/`v` buttons to move it earlier/later in the row.
-Reordering there takes effect immediately and is remembered across
-sessions.
 
 ## The tracker row
 
@@ -157,27 +163,26 @@ energy bar sits in its own fixed spot on the addon's frame regardless.
 
 ## Combo points
 
-By default, shown via Blizzard's own **Personal Resource Display**
-above your character, not drawn by this addon. That display is
-controlled by a client setting (Options → Combat → "Personal Resource
-Display", CVar `nameplateShowSelf`) which this addon manages for you
-(see below), so combo points show up out of the box without having to
-go find that setting yourself. If you want it positioned differently
-(e.g. nearer this HUD), use **Edit Mode** (Esc → Edit Mode) to drag it
-— that's the supported way to move it, since Edit Mode re-applies its
-own saved position on every login and would fight any attempt by this
-addon to reposition it in code.
+With the addon HUD unchecked (the default), combo points show via
+Blizzard's own **Personal Resource Display** above your character, not
+drawn by this addon at all. That display is controlled by a client
+setting (Options → Combat → "Personal Resource Display", CVar
+`nameplateShowSelf`) which the addon leaves alone in this state. If you
+want it positioned differently (e.g. nearer where the HUD would be),
+use **Edit Mode** (Esc → Edit Mode) to drag it — that's the supported
+way to move it, since Edit Mode re-applies its own saved position on
+every login and would fight any attempt by this addon to reposition it
+in code.
 
-If you'd rather have the addon draw its own combo point bar instead,
-check **"Use addon combo bar (instead of Blizzard's)"** in the Options
-panel — it appears centered above the energy bar, and checking it
-automatically turns Blizzard's own display off (unchecking it turns
-Blizzard's back on), so only one is ever shown at a time. Turning
+Checking **"Show addon HUD (instead of Blizzard's resource display)"**
+in the Options panel switches to the addon's own combo point bar
+(centered above the energy bar) and turns Blizzard's Personal Resource
+Display off at the same time, so only one is ever shown. Turning
 Blizzard's off is a two-part fix: the CVar alone didn't actually hide
 its health/power bar, so the addon also directly `:Hide()`s that frame
 and keeps re-hiding it if something tries to show it again (it gets
-re-shown on things like entering combat regardless of the CVar). Custom
-circular art, tinting the game's own combo point atlas
+re-shown on things like entering combat regardless of the CVar).
+Custom circular art, tinting the game's own combo point atlas
 (`UI-RogueCP-Slash-Blue`, confirmed via `/framestack` as exactly what
 this client's Personal Resource Display itself uses) was tried first,
 but neither `:SetMask` nor `:SetAtlas` actually render anything on
