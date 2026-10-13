@@ -57,10 +57,12 @@ eventFrame:SetScript("OnEvent", function(_, event)
     frame:Show()
 
     -- Order matters: the tracker row anchors above the energy bar.
-    -- Combo points aren't drawn by this addon - Blizzard's own Personal
-    -- Resource Display already shows them above your character.
+    -- Combo points use Blizzard's own Personal Resource Display by
+    -- default, but the addon's own combo bar can be enabled instead in
+    -- the Options panel.
     if addon.InitEnergy then addon.InitEnergy() end
     if addon.InitTracker then addon.InitTracker() end
+    if addon.InitComboPoints then addon.InitComboPoints() end
 end)
 
 SLASH_FOREVERROGUEUI1 = "/frui"
@@ -208,8 +210,21 @@ local function CreateOptionsPanel()
         ApplyPosition()
     end)
 
+    -- Combo points default to Blizzard's own Personal Resource Display;
+    -- check this to show the addon's own bar instead (plain colored
+    -- boxes - Blizzard's exact combo point art doesn't actually render
+    -- on this client via SetAtlas/SetMask, both confirmed to be silent
+    -- no-ops here, so this is a different style, not a reproduction).
+    local comboCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
+    comboCheckbox:SetPoint("TOPLEFT", resetButton, "BOTTOMLEFT", -4, -24)
+    comboCheckbox.Text:SetText("Use addon combo bar (instead of Blizzard's)")
+    comboCheckbox:SetScript("OnClick", function(self)
+        addon.GetDB().showComboPoints = self:GetChecked() and true or false
+        if addon.RefreshComboPointsVisibility then addon.RefreshComboPointsVisibility() end
+    end)
+
     local abilitiesLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    abilitiesLabel:SetPoint("TOPLEFT", resetButton, "BOTTOMLEFT", -4, -24)
+    abilitiesLabel:SetPoint("TOPLEFT", comboCheckbox, "BOTTOMLEFT", 4, -16)
     abilitiesLabel:SetText("Tracked abilities (checkbox to show/hide, arrows to reorder)")
 
     -- The user's own left-to-right order, customized via the move
@@ -306,6 +321,7 @@ local function CreateOptionsPanel()
         slider:SetValue(db.scale)
         sliderValueText:SetText(("%.2f"):format(db.scale))
         lockCheckbox:SetChecked(db.locked)
+        comboCheckbox:SetChecked(db.showComboPoints)
         for spellName, checkbox in pairs(abilityRows) do
             checkbox:SetChecked(not db.disabledAbilities[spellName])
         end

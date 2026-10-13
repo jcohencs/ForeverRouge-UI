@@ -3,8 +3,9 @@
 A lightweight Rogue HUD addon for World of Warcraft Forever: an energy
 bar and a single tracker row — left-aligned to the energy bar, Slice
 and Dice always first — for cooldowns, your bleeds/CC on your target,
-and your own buffs. Combo points aren't drawn by this addon; use
-Blizzard's own Personal Resource Display for those (see below).
+and your own buffs. Combo points use Blizzard's own Personal Resource
+Display by default, with an optional addon-drawn combo bar you can
+switch on in the Options panel (see below).
 
 ## Install
 
@@ -156,16 +157,20 @@ energy bar sits in its own fixed spot on the addon's frame regardless.
 
 ## Combo points
 
-Shown via Blizzard's own **Personal Resource Display** above your
-character, not drawn by this addon. Custom circular art, tinting the
-game's own combo point atlas (`UI-RogueCP-Slash-Blue`, confirmed via
-`/framestack` as exactly what this client's Personal Resource Display
-itself uses), and plain colored boxes were all tried as a custom pip
-row first - but neither `:SetMask` nor `:SetAtlas` actually render
-anything on this client (both accept the call without erroring, but
-nothing shows), so using Blizzard's existing display turned out to be
-simplest. If you want it positioned differently (e.g. nearer this
-HUD), use **Edit Mode** (Esc → Edit Mode) to drag it — that's the
-supported way to move it, since Edit Mode re-applies its own saved
-position on every login and would fight any attempt by this addon to
-reposition it in code.
+By default, shown via Blizzard's own **Personal Resource Display**
+above your character, not drawn by this addon. If you want it
+positioned differently (e.g. nearer this HUD), use **Edit Mode** (Esc
+→ Edit Mode) to drag it — that's the supported way to move it, since
+Edit Mode re-applies its own saved position on every login and would
+fight any attempt by this addon to reposition it in code.
+
+If you'd rather have the addon draw its own combo point bar instead,
+check **"Use addon combo bar (instead of Blizzard's)"** in the Options
+panel — it appears centered above the energy bar. Custom circular art,
+tinting the game's own combo point atlas (`UI-RogueCP-Slash-Blue`,
+confirmed via `/framestack` as exactly what this client's Personal
+Resource Display itself uses) was tried first, but neither `:SetMask`
+nor `:SetAtlas` actually render anything on this client (both accept
+the call without erroring, but nothing shows) - so the addon's bar
+uses plain colored boxes instead. It's a different style, not a
+reproduction of Blizzard's exact art.

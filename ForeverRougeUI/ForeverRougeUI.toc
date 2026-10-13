@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: ForeverRogue UI
-## Notes: Rogue cooldown and energy HUD for WoW Forever. Combo points are shown via Blizzard's own Personal Resource Display.
+## Notes: Rogue cooldown and energy HUD for WoW Forever.
 ## Author: jcohenworkcontact
 ## Version: 1.0.0
 ## SavedVariables: ForeverRougeUIDB
@@ -17,3 +17,4 @@ Compat.lua
 Core.lua
 Energy.lua
 Tracker.lua
+ComboPoints.lua

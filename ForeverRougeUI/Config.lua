@@ -20,18 +20,28 @@ addon.defaults = {
     -- and takes over completely from then on.
     abilityOrder = nil,
 
+    -- Off by default: Blizzard's own Personal Resource Display shows
+    -- combo points above your character. Check "Use addon combo bar" in
+    -- the Options panel to show the addon's own bar instead (plain
+    -- colored boxes, not a reproduction of Blizzard's art - see
+    -- ComboPoints.lua for why).
+    showComboPoints = false,
+
     energy = {
         width = 210,
         height = 20,
         showText = true,
     },
 
-    -- Not drawn by this addon - Blizzard's own Personal Resource
-    -- Display already shows combo points above your character. Kept
-    -- only because Rupture/Slice and Dice's combo-scaled fallback
-    -- durations need to know your server's actual max combo points.
+    -- Off by default - Blizzard's own Personal Resource Display
+    -- already shows combo points above your character, and that's what
+    -- shows unless "Use addon combo bar" is checked in the Options
+    -- panel. maxPoints is also used for Rupture/Slice and Dice's
+    -- combo-scaled fallback durations regardless of which bar is shown.
     comboPoints = {
         maxPoints = 5, -- bumped automatically if the server reports more
+        pointSize = 18,
+        spacing = 4,
     },
 
     -- One row, left-aligned to the energy bar, packing only the
@@ -152,7 +162,7 @@ addon.defaults = {
 
 -- Only these are genuine user-adjusted state that should survive
 -- between sessions (set via the Options panel, /frui, or dragging).
-local PERSISTED_KEYS = { "point", "x", "y", "scale", "locked" }
+local PERSISTED_KEYS = { "point", "x", "y", "scale", "locked", "showComboPoints" }
 
 function addon.GetDB()
     ForeverRougeUIDB = ForeverRougeUIDB or {}
