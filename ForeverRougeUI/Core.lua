@@ -28,14 +28,11 @@ local function ApplyLock()
     frame:EnableMouse(not db.locked)
 end
 
--- "Use addon combo bar" in the Options panel is really an all-or-
--- nothing HUD switch: checked shows the whole addon (energy bar,
--- tracker, combo bar) and uses our combo display; unchecked hides the
--- whole addon and leaves Blizzard's Personal Resource Display as the
--- only thing on screen. Still gated on actually being a Rogue.
+-- The energy bar and ability tracker always show for Rogues - only the
+-- combo display itself (Blizzard's Personal Resource Display vs. the
+-- addon's own bar) is a choice, handled by ApplyComboBarChoice below.
 function addon.ApplyHUDVisibility()
-    local db = addon.GetDB()
-    frame:SetShown(addon.IsPlayerRogue() and db.showComboPoints)
+    frame:SetShown(addon.IsPlayerRogue())
 end
 
 -- Exactly one combo display at a time: when the addon's own bar is
@@ -80,6 +77,11 @@ function addon.ApplyComboBarChoice()
             pcall(PersonalResourceDisplayFrame.Hide, PersonalResourceDisplayFrame)
         end
     end
+
+    -- The tracker row anchors above whichever combo display is
+    -- actually the active one, so its icons don't end up anchored to
+    -- a now-hidden frame.
+    if addon.ReanchorTrackerRow then addon.ReanchorTrackerRow() end
 end
 
 function addon.IsPlayerRogue()
@@ -114,10 +116,13 @@ eventFrame:SetScript("OnEvent", function(_, event)
     -- been enabled in the Options panel - never both.
     addon.ApplyComboBarChoice()
 
-    -- Order matters: the tracker row anchors above the energy bar.
+    -- Order matters: the combo bar needs to exist before the tracker
+    -- can anchor to it (ApplyComboBarChoice re-anchors the tracker too,
+    -- but only once the combo row frame actually exists).
     if addon.InitEnergy then addon.InitEnergy() end
-    if addon.InitTracker then addon.InitTracker() end
     if addon.InitComboPoints then addon.InitComboPoints() end
+    if addon.InitTracker then addon.InitTracker() end
+    if addon.ReanchorTrackerRow then addon.ReanchorTrackerRow() end
 
     addon.ApplyHUDVisibility()
 end)
@@ -267,21 +272,20 @@ local function CreateOptionsPanel()
         ApplyPosition()
     end)
 
-    -- All-or-nothing HUD switch: unchecked (default) hides this addon
-    -- entirely and leaves Blizzard's own Personal Resource Display as
-    -- the only combo/resource display. Checked shows the whole addon
-    -- (energy bar, tracker, combo bar) and uses the addon's own combo
-    -- bar instead (plain colored boxes - Blizzard's exact combo point
-    -- art doesn't actually render on this client via SetAtlas/SetMask,
-    -- both confirmed to be silent no-ops here, so this is a different
-    -- style, not a reproduction).
+    -- Combo points default to Blizzard's own Personal Resource Display;
+    -- check this to show the addon's own bar instead (plain colored
+    -- boxes - Blizzard's exact combo point art doesn't actually render
+    -- on this client via SetAtlas/SetMask, both confirmed to be silent
+    -- no-ops here, so this is a different style, not a reproduction).
+    -- The energy bar and ability tracker aren't affected either way -
+    -- this only decides which of the two combo displays is active, and
+    -- the tracker row re-anchors itself above whichever one that is.
     local comboCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
     comboCheckbox:SetPoint("TOPLEFT", resetButton, "BOTTOMLEFT", -4, -24)
-    comboCheckbox.Text:SetText("Show addon HUD (instead of Blizzard's resource display)")
+    comboCheckbox.Text:SetText("Use addon combo bar (instead of Blizzard's)")
     comboCheckbox:SetScript("OnClick", function(self)
         addon.GetDB().showComboPoints = self:GetChecked() and true or false
         addon.ApplyComboBarChoice()
-        addon.ApplyHUDVisibility()
         if addon.RefreshComboPointsVisibility then addon.RefreshComboPointsVisibility() end
     end)
 

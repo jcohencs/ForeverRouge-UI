@@ -463,6 +463,34 @@ function addon.RefreshTrackerLayout()
     PackVisibleIcons(db.iconSize, db.spacing, db.displayOrder, fullDB.abilityOrder, energyWidth)
 end
 
+-- Anchors the tracker row above whichever combo display is currently
+-- the active one - the addon's own combo bar if that's enabled,
+-- otherwise Blizzard's Personal Resource Display - so the icons always
+-- end up next to whichever one is actually on screen, rather than
+-- fixed to one of them regardless of the Options panel choice. This
+-- only positions our own row relative to the other as a reference
+-- point, never touches its position, so it doesn't fight Edit Mode the
+-- way actually moving Blizzard's frame would. Falls back to our energy
+-- bar, then the addon frame, if neither reference exists yet.
+function addon.ReanchorTrackerRow()
+    if not row then return end
+    row:ClearAllPoints()
+
+    local useAddonBar = addon.GetDB().showComboPoints
+    local anchorFrame = useAddonBar and addon.comboRow or PersonalResourceDisplayFrame
+
+    local ok = anchorFrame and pcall(function()
+        row:SetPoint("BOTTOM", anchorFrame, "TOP", 0, 8)
+    end)
+    if not ok then
+        if addon.energyBar then
+            row:SetPoint("BOTTOMLEFT", addon.energyBar, "TOPLEFT", 0, 8)
+        else
+            row:SetPoint("LEFT", addon.frame, "TOPLEFT", 0, -8)
+        end
+    end
+end
+
 function addon.InitTracker()
     if initialized then
         UpdateAll()
@@ -476,23 +504,7 @@ function addon.InitTracker()
     addon.trackerRow = row
     row:SetSize(1, db.iconSize)
 
-    -- Prefer anchoring above Blizzard's own Personal Resource Display
-    -- (centered over it, since it's compact rather than bar-shaped) -
-    -- this only positions our own row relative to theirs as a
-    -- reference point, never touches their frame's own position, so it
-    -- doesn't fight Edit Mode the way actually moving their frame
-    -- would. Falls back to our energy bar, then the addon frame, if
-    -- that global doesn't exist on this client.
-    local ok = PersonalResourceDisplayFrame and pcall(function()
-        row:SetPoint("BOTTOM", PersonalResourceDisplayFrame, "TOP", 0, 8)
-    end)
-    if not ok then
-        if addon.energyBar then
-            row:SetPoint("BOTTOMLEFT", addon.energyBar, "TOPLEFT", 0, 8)
-        else
-            row:SetPoint("LEFT", addon.frame, "TOPLEFT", 0, -8)
-        end
-    end
+    addon.ReanchorTrackerRow()
 
     for _, name in ipairs(db.cooldowns) do
         CreateIcon(db, "cooldown", name)
