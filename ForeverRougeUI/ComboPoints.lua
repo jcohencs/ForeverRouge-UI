@@ -85,7 +85,10 @@ function addon.InitComboPoints()
     row = CreateFrame("Frame", "ForeverRougeUIComboRow", addon.frame)
     addon.comboRow = row
     if addon.energyBar then
-        row:SetPoint("BOTTOM", addon.energyBar, "TOP", 0, 8)
+        -- Directly under the energy bar, not above it - the ability
+        -- tracker is what goes above the energy bar (see
+        -- addon.ReanchorTrackerRow in Tracker.lua).
+        row:SetPoint("TOP", addon.energyBar, "BOTTOM", 0, -6)
     else
         row:SetPoint("TOP", addon.frame, "TOP", 0, -40)
     end

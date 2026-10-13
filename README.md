@@ -156,19 +156,16 @@ differently than expected.
 
 ## Layout
 
-The tracker row anchors directly above whichever combo display is
+The tracker row anchors directly above whichever resource display is
 currently active (centered over it): Blizzard's own Personal Resource
-Display by default, or the addon's own combo bar if that's enabled in
-the Options panel - it automatically switches to the other one the
-moment you toggle that setting. Falls back to anchoring above the
-energy bar if neither reference exists on this client. This only
-positions our own row relative to the other frame as a reference point
-— it never touches that frame's own position, so it doesn't fight Edit
-Mode the way actually moving Blizzard's frame would. The addon's own
-combo bar, in turn, sits directly above the energy bar. Both the
-energy bar and the addon's combo bar sit in their own fixed spot on
-the addon's frame when they're showing (see Combo points below for
-when that is).
+Display by default, or the addon's own energy bar if the addon combo
+bar is enabled in the Options panel - it automatically switches to the
+other one the moment you toggle that setting. This only positions our
+own row relative to the other frame as a reference point — it never
+touches that frame's own position, so it doesn't fight Edit Mode the
+way actually moving Blizzard's frame would. The addon's own combo bar
+sits directly *below* the energy bar, not above it, so it never
+overlaps with the tracker row.
 
 ## Combo points
 
@@ -187,7 +184,7 @@ fight any attempt by this addon to reposition it in code.
 If you'd rather have the addon draw its own resource bars instead,
 check **"Use addon combo bar (instead of Blizzard's)"** in the Options
 panel — this brings up both the addon's energy bar and its combo point
-bar together (the combo bar centered directly above the energy bar),
+bar together (the combo bar centered directly below the energy bar),
 and turns Blizzard's own display off at the same time (unchecking it
 turns Blizzard's back on and hides the addon's energy/combo bars
 again), so only one pair is ever shown. The ability tracker row keeps

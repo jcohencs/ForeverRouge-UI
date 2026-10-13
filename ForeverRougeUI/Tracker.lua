@@ -463,21 +463,23 @@ function addon.RefreshTrackerLayout()
     PackVisibleIcons(db.iconSize, db.spacing, db.displayOrder, fullDB.abilityOrder, energyWidth)
 end
 
--- Anchors the tracker row above whichever combo display is currently
--- the active one - the addon's own combo bar if that's enabled,
+-- Anchors the tracker row above whichever resource display is
+-- currently the active one - the addon's own energy bar if that's
+-- enabled (the addon's combo bar sits *below* the energy bar, not
+-- above it, so the energy bar is the right reference either way),
 -- otherwise Blizzard's Personal Resource Display - so the icons always
 -- end up next to whichever one is actually on screen, rather than
 -- fixed to one of them regardless of the Options panel choice. This
 -- only positions our own row relative to the other as a reference
 -- point, never touches its position, so it doesn't fight Edit Mode the
--- way actually moving Blizzard's frame would. Falls back to our energy
--- bar, then the addon frame, if neither reference exists yet.
+-- way actually moving Blizzard's frame would. Falls back to the addon
+-- frame if neither reference exists yet.
 function addon.ReanchorTrackerRow()
     if not row then return end
     row:ClearAllPoints()
 
     local useAddonBar = addon.GetDB().showComboPoints
-    local anchorFrame = useAddonBar and addon.comboRow or PersonalResourceDisplayFrame
+    local anchorFrame = useAddonBar and addon.energyBar or PersonalResourceDisplayFrame
 
     local ok = anchorFrame and pcall(function()
         row:SetPoint("BOTTOM", anchorFrame, "TOP", 0, 8)
