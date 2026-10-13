@@ -160,28 +160,23 @@ energy bar sits in its own fixed spot on the addon's frame regardless.
 By default, shown via Blizzard's own **Personal Resource Display**
 above your character, not drawn by this addon. That display is
 controlled by a client setting (Options → Combat → "Personal Resource
-Display") — this addon automatically turns it on for you once per
-session if you had it off, since combo points wouldn't show up
-otherwise. It only ever turns it on, never off, so turning it back off
-yourself in Options sticks for the rest of that session. If you want it
-positioned differently (e.g. nearer this HUD), use **Edit Mode** (Esc
-→ Edit Mode) to drag it — that's the supported way to move it, since
-Edit Mode re-applies its own saved position on every login and would
-fight any attempt by this addon to reposition it in code.
+Display", CVar `nameplateShowSelf`) which this addon manages for you
+(see below), so combo points show up out of the box without having to
+go find that setting yourself. If you want it positioned differently
+(e.g. nearer this HUD), use **Edit Mode** (Esc → Edit Mode) to drag it
+— that's the supported way to move it, since Edit Mode re-applies its
+own saved position on every login and would fight any attempt by this
+addon to reposition it in code.
 
 If you'd rather have the addon draw its own combo point bar instead,
 check **"Use addon combo bar (instead of Blizzard's)"** in the Options
-panel — it appears centered above the energy bar. Custom circular art,
-tinting the game's own combo point atlas (`UI-RogueCP-Slash-Blue`,
-confirmed via `/framestack` as exactly what this client's Personal
-Resource Display itself uses) was tried first, but neither `:SetMask`
-nor `:SetAtlas` actually render anything on this client (both accept
-the call without erroring, but nothing shows) - so the addon's bar
-uses plain colored boxes instead. It's a different style, not a
-reproduction of Blizzard's exact art.
-
-Even with that checkbox on, the addon's bar steps aside automatically
-whenever Blizzard's own Personal Resource Display is actually up
-on-screen (it only appears in combat/while targeting something, even
-though the setting itself is always on) - so the two never show
-stacked on top of each other.
+panel — it appears centered above the energy bar, and checking it
+automatically turns Blizzard's own display off (unchecking it turns
+Blizzard's back on), so only one is ever shown at a time. Custom
+circular art, tinting the game's own combo point atlas
+(`UI-RogueCP-Slash-Blue`, confirmed via `/framestack` as exactly what
+this client's Personal Resource Display itself uses) was tried first,
+but neither `:SetMask` nor `:SetAtlas` actually render anything on
+this client (both accept the call without erroring, but nothing
+shows) - so the addon's bar uses plain colored boxes instead. It's a
+different style, not a reproduction of Blizzard's exact art.

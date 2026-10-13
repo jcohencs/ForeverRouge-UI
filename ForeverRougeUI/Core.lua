@@ -28,6 +28,23 @@ local function ApplyLock()
     frame:EnableMouse(not db.locked)
 end
 
+-- Exactly one combo display at a time: when the addon's own bar is
+-- enabled, turn Blizzard's Personal Resource Display off (CVar
+-- nameplateShowSelf) so they never show stacked on top of each other;
+-- when it's disabled, turn Blizzard's back on so combo points still
+-- show by default.
+function addon.ApplyComboBarChoice()
+    if not GetCVar or not SetCVar then return end
+    local db = addon.GetDB()
+    local wantBlizzardOn = not db.showComboPoints
+    local isOn = GetCVar("nameplateShowSelf") == "1"
+    if wantBlizzardOn and not isOn then
+        pcall(SetCVar, "nameplateShowSelf", "1")
+    elseif not wantBlizzardOn and isOn then
+        pcall(SetCVar, "nameplateShowSelf", "0")
+    end
+end
+
 function addon.IsPlayerRogue()
     local _, class = UnitClass("player")
     return class == "ROGUE"
@@ -56,20 +73,10 @@ eventFrame:SetScript("OnEvent", function(_, event)
     end
     frame:Show()
 
-    -- This addon's default combo display is Blizzard's own Personal
-    -- Resource Display (Options > Combat > "Personal Resource
-    -- Display", CVar nameplateShowSelf) - turn it on if the player has
-    -- it off, so combo points actually show up by default rather than
-    -- silently depending on a client setting this addon doesn't touch
-    -- otherwise. Only forces it on, never off, and only once per
-    -- session (not on every PLAYER_ENTERING_WORLD) so it doesn't fight
-    -- someone who deliberately turns it back off mid-session.
-    if not addon.forcedPersonalResourceDisplay then
-        addon.forcedPersonalResourceDisplay = true
-        if GetCVar and GetCVar("nameplateShowSelf") == "0" then
-            pcall(SetCVar, "nameplateShowSelf", "1")
-        end
-    end
+    -- Make sure the right combo display is on: Blizzard's Personal
+    -- Resource Display by default, or the addon's own bar if that's
+    -- been enabled in the Options panel - never both.
+    addon.ApplyComboBarChoice()
 
     -- Order matters: the tracker row anchors above the energy bar.
     -- Combo points use Blizzard's own Personal Resource Display by
@@ -235,6 +242,7 @@ local function CreateOptionsPanel()
     comboCheckbox.Text:SetText("Use addon combo bar (instead of Blizzard's)")
     comboCheckbox:SetScript("OnClick", function(self)
         addon.GetDB().showComboPoints = self:GetChecked() and true or false
+        addon.ApplyComboBarChoice()
         if addon.RefreshComboPointsVisibility then addon.RefreshComboPointsVisibility() end
     end)
 

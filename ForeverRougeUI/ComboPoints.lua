@@ -3,10 +3,12 @@ local addon = ForeverRougeUI
 
 -- Optional, off by default (see Options panel) - Blizzard's own
 -- Personal Resource Display already shows combo points natively, so
--- this is just an alternative for anyone who wants our own HUD-styled
--- bar instead/as well. Plain SetColorTexture boxes: the one rendering
--- approach that's actually worked reliably on this client, after
--- :SetMask and :SetAtlas both turned out to be silent no-ops here.
+-- this is an alternative for anyone who wants our own HUD-styled bar
+-- instead. Enabling it disables Blizzard's (see
+-- addon.ApplyComboBarChoice in Core.lua) so only one is ever shown.
+-- Plain SetColorTexture boxes: the one rendering approach that's
+-- actually worked reliably on this client, after :SetMask and
+-- :SetAtlas both turned out to be silent no-ops here.
 
 local pips = {}
 local row, initialized
@@ -44,17 +46,12 @@ end
 
 local lastMax = 0
 
--- Blizzard's Personal Resource Display only actually appears in
--- combat/while targeting something, not just because the CVar is on -
--- so even with our bar enabled, skip showing it whenever theirs is
--- already up, rather than stacking both combo displays on screen at
--- once.
-local function BlizzardBarIsUp()
-    return PersonalResourceDisplayFrame and PersonalResourceDisplayFrame:IsVisible()
-end
-
+-- Mutual exclusion with Blizzard's own Personal Resource Display is
+-- handled by addon.ApplyComboBarChoice() in Core.lua (it flips the
+-- nameplateShowSelf CVar opposite to this setting), not by anything
+-- here - this row just follows the setting directly.
 local function Update()
-    local visible = addon.GetDB().showComboPoints and not BlizzardBarIsUp()
+    local visible = addon.GetDB().showComboPoints
     row:SetShown(visible)
     if not visible then return end
 
@@ -100,14 +97,6 @@ function addon.InitComboPoints()
     addon.SafeRegisterEvent(watcher, "PLAYER_TARGET_CHANGED")
     addon.SafeRegisterEvent(watcher, "PLAYER_ENTERING_WORLD")
     watcher:SetScript("OnEvent", Update)
-
-    -- React immediately to the Blizzard bar itself appearing/
-    -- disappearing (e.g. entering/leaving combat), not just to combo
-    -- point changes, so there's no brief overlap of both bars.
-    if PersonalResourceDisplayFrame then
-        PersonalResourceDisplayFrame:HookScript("OnShow", Update)
-        PersonalResourceDisplayFrame:HookScript("OnHide", Update)
-    end
 
     Update()
 end
