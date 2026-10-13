@@ -248,6 +248,27 @@ local function OnSpellCastSucceeded(spellID)
     end
 end
 
+-- UNIT_SPELLCAST_SUCCEEDED fires the instant a cast goes off, whether
+-- or not it actually connects with the target - so the cast-fallback
+-- timer armed above can start counting down a debuff/buff that never
+-- actually landed (confirmed in-game: Rupture missed a player target
+-- and the tracker still showed a countdown for it). SPELL_MISS is the
+-- only reliable way to tell a miss/dodge/parry/resist apart from "it
+-- hit but this server sealed the data" - so cancel the fallback the
+-- moment one comes in for that exact spell. Experimental: this is the
+-- combat log event that was removed earlier over a "this action is
+-- only available to the Blizzard UI" block; if that block comes back
+-- after this, it really was COMBAT_LOG_EVENT_UNFILTERED and this needs
+-- a different approach.
+local function OnSpellMiss(spellId)
+    for _, iconFrame in ipairs(icons) do
+        if iconFrame.spellID == spellId and iconFrame.kind ~= "cooldown" and iconFrame.castFallbackStart then
+            iconFrame.castFallbackStart = nil
+            HideIcon(iconFrame)
+        end
+    end
+end
+
 -- ---------------------------------------------------------------------
 -- Aura-type icons (debuffs on target, buffs on self) - real durations,
 -- not sealed, so these are exact.
@@ -611,6 +632,7 @@ function addon.InitTracker()
     addon.SafeRegisterEvent(watcher, "SPELL_UPDATE_COOLDOWN")
     addon.SafeRegisterEvent(watcher, "PLAYER_ENTERING_WORLD")
     addon.SafeRegisterEvent(watcher, "PLAYER_TARGET_CHANGED")
+    addon.SafeRegisterEvent(watcher, "COMBAT_LOG_EVENT_UNFILTERED")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_SPELLCAST_SUCCEEDED", "player")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "target")
     addon.SafeRegisterUnitEvent(watcher, "UNIT_AURA", "player")
@@ -623,6 +645,15 @@ function addon.InitTracker()
             OnTargetChanged()
         elseif event == "UNIT_POWER_UPDATE" or event == "UNIT_POWER_FREQUENT" then
             TrackComboPoints()
+        elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
+            -- Experimental (see OnSpellMiss above) - only ever reads
+            -- SPELL_MISS, nothing else, to keep this as narrow as
+            -- possible while testing whether combat log itself was
+            -- really the cause of the earlier block.
+            local ok, _, subevent, _, sourceGUID, _, _, _, _, _, _, _, spellId = pcall(CombatLogGetCurrentEventInfo)
+            if ok and sourceGUID == UnitGUID("player") and subevent == "SPELL_MISS" then
+                OnSpellMiss(spellId)
+            end
         end
         UpdateAll()
     end)

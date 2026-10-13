@@ -102,7 +102,13 @@ tracker = {
   debuff durations from addons entirely for some effects (Rupture/
   Gouge/Kidney Shot never read live here), so if that comes back empty
   it falls back to a self-timed estimate from `fallbackDurations`
-  instead, same idea as the sealed-cooldown fallback below.
+  instead, same idea as the sealed-cooldown fallback below. Since a
+  cast can still miss/be dodged/parried/resisted, the addon also
+  watches the combat log for a `SPELL_MISS` on that exact spell right
+  after casting it (confirmed in-game: Rupture missed a player and the
+  tracker showed a countdown anyway without this) and cancels the
+  fallback timer the instant one comes in, rather than showing a
+  debuff that never actually landed.
 - **playerBuffs**: same idea, for buffs on yourself. Evasion, Sprint,
   and Eureka! live here rather than in `cooldowns`, so you see their
   active buff duration instead of their (much longer) full reuse
