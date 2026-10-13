@@ -104,11 +104,20 @@ tracker = {
   it falls back to a self-timed estimate from `fallbackDurations`
   instead, same idea as the sealed-cooldown fallback below. Since a
   cast can still miss/be dodged/parried/resisted, the addon also
-  watches the combat log for a `SPELL_MISS` on that exact spell right
-  after casting it (confirmed in-game: Rupture missed a player and the
+  watches for that (confirmed in-game: Rupture missed a player and the
   tracker showed a countdown anyway without this) and cancels the
-  fallback timer the instant one comes in, rather than showing a
-  debuff that never actually landed.
+  fallback timer the instant it happens, rather than showing a debuff
+  that never actually landed. Combat log (`COMBAT_LOG_EVENT_UNFILTERED`)
+  would be the normal way to do this, but this server blocks addons
+  from reading it at all ("this action is only available to the
+  Blizzard UI", confirmed in-game - the same lockdown pattern as the
+  sealed cooldowns/auras elsewhere), so instead it reads the plain
+  chat combat-text events (`CHAT_MSG_SPELL_SELF_MISSES`/
+  `CHAT_MSG_COMBAT_SELF_MISSES` - "Your Rupture misses Playername.")
+  and matches the spell name in the message text. That means it's
+  locale-dependent (English client only) and a little less precise
+  than a real spellId match would be, but it's the only lever left
+  once combat log itself is off the table.
 - **playerBuffs**: same idea, for buffs on yourself. Evasion, Sprint,
   and Eureka! live here rather than in `cooldowns`, so you see their
   active buff duration instead of their (much longer) full reuse
