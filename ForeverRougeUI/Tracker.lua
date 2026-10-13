@@ -475,10 +475,23 @@ function addon.InitTracker()
     row = CreateFrame("Frame", "ForeverRougeUITrackerRow", addon.frame)
     addon.trackerRow = row
     row:SetSize(1, db.iconSize)
-    if addon.energyBar then
-        row:SetPoint("BOTTOMLEFT", addon.energyBar, "TOPLEFT", 0, 8)
-    else
-        row:SetPoint("LEFT", addon.frame, "TOPLEFT", 0, -8)
+
+    -- Prefer anchoring above Blizzard's own Personal Resource Display
+    -- (centered over it, since it's compact rather than bar-shaped) -
+    -- this only positions our own row relative to theirs as a
+    -- reference point, never touches their frame's own position, so it
+    -- doesn't fight Edit Mode the way actually moving their frame
+    -- would. Falls back to our energy bar, then the addon frame, if
+    -- that global doesn't exist on this client.
+    local ok = PersonalResourceDisplayFrame and pcall(function()
+        row:SetPoint("BOTTOM", PersonalResourceDisplayFrame, "TOP", 0, 8)
+    end)
+    if not ok then
+        if addon.energyBar then
+            row:SetPoint("BOTTOMLEFT", addon.energyBar, "TOPLEFT", 0, 8)
+        else
+            row:SetPoint("LEFT", addon.frame, "TOPLEFT", 0, -8)
+        end
     end
 
     for _, name in ipairs(db.cooldowns) do

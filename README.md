@@ -146,9 +146,13 @@ differently than expected.
 
 ## Layout
 
-Top to bottom: the tracker row, then the energy bar. The tracker row
-anchors off the energy bar, so resizing icons or the bar in
-`Config.lua` keeps everything aligned.
+The tracker row anchors directly above Blizzard's own Personal
+Resource Display (centered over it) when that frame exists on this
+client, falling back to anchoring above the energy bar otherwise. This
+only positions our own row relative to theirs as a reference point —
+it never touches the Personal Resource Display's own position, so it
+doesn't fight Edit Mode the way actually moving their frame would. The
+energy bar sits in its own fixed spot on the addon's frame regardless.
 
 ## Combo points
 
