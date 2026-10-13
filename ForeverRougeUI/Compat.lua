@@ -269,6 +269,38 @@ function addon.DebugAuras(unit, filter)
         return
     end
 
+    -- Raw diagnostic for index 1 specifically, since GetUnitAuraByIndex
+    -- normally swallows the difference between "the API errored" and
+    -- "the API ran fine but just says there's nothing here" - we need
+    -- to know which one this actually is.
+    if type(UnitAura) == "function" then
+        local ok, r1, r2, r3 = pcall(UnitAura, unit, 1, filter)
+        print(("  UnitAura(%s, 1, %s) -> ok=%s, name=%s, icon=%s, count=%s"):format(
+            unit, filter, tostring(ok), tostring(r1), tostring(r2), tostring(r3)))
+    else
+        print("  UnitAura: not a function on this client")
+    end
+    if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+        local ok, data = pcall(C_UnitAuras.GetAuraDataByIndex, unit, 1, filter)
+        if ok and data then
+            print(("  C_UnitAuras.GetAuraDataByIndex(%s, 1, %s) -> ok=true, name=%s, applications=%s"):format(
+                unit, filter, tostring(data.name), tostring(data.applications)))
+        else
+            print(("  C_UnitAuras.GetAuraDataByIndex(%s, 1, %s) -> ok=%s, data=%s"):format(
+                unit, filter, tostring(ok), tostring(data)))
+        end
+    else
+        print("  C_UnitAuras.GetAuraDataByIndex: not available on this client")
+    end
+
+    -- Also try with no filter at all, in case this client's aura API
+    -- doesn't actually honor filter strings like "HELPFUL"/"HARMFUL"
+    -- the normal way.
+    if type(UnitAura) == "function" then
+        local ok, r1 = pcall(UnitAura, unit, 1)
+        print(("  UnitAura(%s, 1, <no filter>) -> ok=%s, name=%s"):format(unit, tostring(ok), tostring(r1)))
+    end
+
     local count = 0
     for i = 1, 40 do
         local name, _, duration, expirationTime, source, charges = addon.GetUnitAuraByIndex(unit, i, filter)
